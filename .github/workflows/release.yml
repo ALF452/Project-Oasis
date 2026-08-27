@@ -42,9 +42,24 @@ jobs:
       - name: Decode signing keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           mkdir -p "$RUNNER_TEMP/keystore"
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore/oasis-release.jks"
+          # Strip any whitespace/newlines a copy-paste into the GitHub UI may have
+          # introduced, and ignore stray non-base64 characters defensively.
+          echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode --ignore-garbage > "$RUNNER_TEMP/keystore/oasis-release.jks"
+
+          if [ ! -s "$RUNNER_TEMP/keystore/oasis-release.jks" ]; then
+            echo "::error::Decoded keystore file is empty. The KEYSTORE_BASE64 secret's value doesn't look like valid base64 — re-copy the full contents of keystore_base64.txt (one long line, no extra text) into that secret."
+            exit 1
+          fi
+
+          if ! keytool -list -keystore "$RUNNER_TEMP/keystore/oasis-release.jks" -storepass "$KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::Decoded file isn't a valid keystore, or KEYSTORE_PASSWORD doesn't match it. Re-check both secrets against the values you were given."
+            exit 1
+          fi
+
+          echo "Keystore decoded and verified."
 
       - name: Build signed release APK
         env:
