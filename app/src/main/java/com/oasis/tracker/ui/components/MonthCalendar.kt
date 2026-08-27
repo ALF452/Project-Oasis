@@ -76,7 +76,8 @@ fun MonthCalendar(
         }
 
         val firstOfMonth = yearMonth.atDay(1)
-        val leadingBlanks = firstOfMonth.dayOfWeek.value % 7 // Monday=1..Sunday=7 -> Sunday-first grid offset
+        // Header is Monday-first (DayOfWeek.values() order), so Monday(1)->0 blanks .. Sunday(7)->6 blanks.
+        val leadingBlanks = firstOfMonth.dayOfWeek.value - 1
         val daysInMonth = yearMonth.lengthOfMonth()
         val totalCells = leadingBlanks + daysInMonth
         val rows = (totalCells + 6) / 7

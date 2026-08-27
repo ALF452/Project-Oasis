@@ -1,16 +1,21 @@
 package com.oasis.tracker.network
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+
 class GameSearchRepository(
     private val wikipediaApi: WikipediaApi = NetworkModule.wikipediaApi,
     private val archiveOrgApi: ArchiveOrgApi = NetworkModule.archiveOrgApi
 ) {
 
-    /** Searches both Wikipedia and archive.org, keeping either source's failure from sinking the other. */
+    /** Searches Wikipedia and archive.org concurrently, keeping either source's failure from sinking the other. */
     suspend fun search(query: String): List<GameSearchResult> {
         if (query.isBlank()) return emptyList()
-        val wiki = runCatching { searchWikipedia(query) }.getOrDefault(emptyList())
-        val archive = runCatching { searchArchiveOrg(query) }.getOrDefault(emptyList())
-        return wiki + archive
+        return coroutineScope {
+            val wiki = async { runCatching { searchWikipedia(query) }.getOrDefault(emptyList()) }
+            val archive = async { runCatching { searchArchiveOrg(query) }.getOrDefault(emptyList()) }
+            wiki.await() + archive.await()
+        }
     }
 
     private suspend fun searchWikipedia(query: String): List<GameSearchResult> {

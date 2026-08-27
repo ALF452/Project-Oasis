@@ -4,7 +4,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Interceptor
-import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -23,18 +22,20 @@ object NetworkModule {
         chain.proceed(request)
     }
 
-    private val okHttpClient: OkHttpClient by lazy {
+    // Exposed so other API clients (e.g. GitHubApi) can derive from the same
+    // connection pool/dispatcher via newBuilder() instead of spinning up their own.
+    val sharedOkHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(userAgentInterceptor)
             .build()
     }
 
-    private val jsonConverter = json.asConverterFactory("application/json".toMediaType())
+    val jsonConverter = json.asConverterFactory("application/json".toMediaType())
 
     val wikipediaApi: WikipediaApi by lazy {
         Retrofit.Builder()
             .baseUrl("https://en.wikipedia.org/")
-            .client(okHttpClient)
+            .client(sharedOkHttpClient)
             .addConverterFactory(jsonConverter)
             .build()
             .create(WikipediaApi::class.java)
@@ -43,7 +44,7 @@ object NetworkModule {
     val archiveOrgApi: ArchiveOrgApi by lazy {
         Retrofit.Builder()
             .baseUrl("https://archive.org/")
-            .client(okHttpClient)
+            .client(sharedOkHttpClient)
             .addConverterFactory(jsonConverter)
             .build()
             .create(ArchiveOrgApi::class.java)

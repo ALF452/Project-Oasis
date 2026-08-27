@@ -1,11 +1,8 @@
 package com.oasis.tracker.update
 
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
+import com.oasis.tracker.network.NetworkModule
 import okhttp3.Interceptor
 import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 
@@ -15,12 +12,12 @@ interface GitHubApi {
 
     companion object {
         fun create(): GitHubApi {
-            val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
-            val client = OkHttpClient.Builder()
+            // Derived from the shared client via newBuilder() so this reuses its
+            // connection pool/dispatcher instead of spinning up a second one.
+            val client = NetworkModule.sharedOkHttpClient.newBuilder()
                 .addInterceptor(Interceptor { chain ->
                     val request = chain.request().newBuilder()
                         .header("Accept", "application/vnd.github+json")
-                        .header("User-Agent", "OasisGameTracker-UpdateChecker")
                         .build()
                     chain.proceed(request)
                 })
@@ -28,7 +25,7 @@ interface GitHubApi {
             return Retrofit.Builder()
                 .baseUrl("https://api.github.com/")
                 .client(client)
-                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .addConverterFactory(NetworkModule.jsonConverter)
                 .build()
                 .create(GitHubApi::class.java)
         }

@@ -58,7 +58,8 @@ fun AddEditEntryDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val hours = hoursText.toFloatOrNull() ?: 0f
+                // Accept comma as a decimal separator too (European decimal keypads emit ',').
+                val hours = hoursText.trim().replace(',', '.').toFloatOrNull() ?: 0f
                 onSave(hours, notesText.ifBlank { null })
             }) { Text("SAVE") }
         },

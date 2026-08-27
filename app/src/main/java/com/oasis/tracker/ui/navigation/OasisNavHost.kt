@@ -2,6 +2,7 @@ package com.oasis.tracker.ui.navigation
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,7 +35,7 @@ fun OasisRoot() {
         app.updateManager.checkForUpdate()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
         UpdateBanner(
             state = updateState,
             onDownload = { (updateState as? UpdateState.Available)?.let { app.updateManager.startDownload(it.info) } },
