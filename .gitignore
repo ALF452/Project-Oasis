@@ -9,6 +9,9 @@ build/
 app/build/
 local.properties
 
+# Built APKs are published as GitHub Release assets, not committed
+*.apk
+
 # Android Studio / IntelliJ
 .idea/
 *.iml
