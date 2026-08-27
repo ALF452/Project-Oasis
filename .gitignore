@@ -1,0 +1,18 @@
+# Signing material — never commit. CI sources these from GitHub Actions secrets.
+keystore/*.jks
+keystore/*.keystore
+keystore/keystore.properties
+
+# Gradle
+.gradle/
+build/
+app/build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.DS_Store
+
+# Gradle wrapper distribution cache (jar itself is kept)
+gradle/wrapper/dists/

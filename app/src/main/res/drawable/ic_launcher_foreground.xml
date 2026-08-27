@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- outer glow -->
+    <path
+        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
+        android:strokeColor="#3300E5FF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- mid glow -->
+    <path
+        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
+        android:strokeColor="#6600E5FF"
+        android:strokeWidth="11"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- core ring, gap at bottom like a HUD scanner -->
+    <path
+        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
+        android:strokeColor="#CFFBFF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- center HUD dot -->
+    <path
+        android:pathData="M54,54 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0"
+        android:fillColor="#00E5FF" />
+
+    <!-- tick marks: top, left, right -->
+    <path
+        android:pathData="M54,16 v8"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M16,54 h8"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M84,54 h8"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+</vector>
