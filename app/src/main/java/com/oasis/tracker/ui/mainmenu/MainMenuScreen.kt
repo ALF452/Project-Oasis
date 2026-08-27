@@ -43,7 +43,8 @@ import kotlinx.coroutines.launch
 fun MainMenuScreen(
     onOpenMonthlyTracker: () -> Unit,
     onOpenYearlyTracker: () -> Unit,
-    onOpenPlatform: (String) -> Unit
+    onOpenPlatform: (String) -> Unit,
+    onOpenSteam: () -> Unit
 ) {
     val app = rememberOasisApp()
     val context = LocalContext.current
@@ -106,6 +107,17 @@ fun MainMenuScreen(
         }
         item(span = { GridItemSpan(1) }) {
             MenuTile(label = "YEARLY", sublabel = "Tracker", onClick = onOpenYearlyTracker)
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "ACCOUNTS",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(2) }) {
+            MenuTile(label = "STEAM", sublabel = "Library & achievements", onClick = onOpenSteam)
         }
 
         item(span = { GridItemSpan(2) }) {

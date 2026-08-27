@@ -19,6 +19,8 @@ Dark charcoal UI with glowing neon-blue borders throughout.
 - **In-app updates** — no Play Store. The app checks this repo's latest
   GitHub Release on launch and offers to download + install the new APK
   in place, keeping your logged data.
+- **Steam** — connect your Steam account (OpenID sign-in, no password shared
+  with the app) to browse your library and per-game achievement completion.
 
 ## How updates work
 
@@ -57,12 +59,25 @@ note that any future APK would then no longer be treated as an "update" by
 devices that already have the old-key version installed; they'd need a full
 reinstall once.
 
+### Optional: Steam integration
+
+Steam achievements need one more secret, `STEAM_API_KEY` — a free key from
+https://steamcommunity.com/dev/apikey (any domain name works when
+registering it, e.g. "localhost"). Without this secret the build still
+succeeds; the Steam screen just shows it isn't configured yet.
+
+Unlike the signing keystore, this key isn't tied to end users — it's the
+app's own key for reading *public* Steam profile/game data on behalf of
+whoever connects their account, the same way sites like SteamDB or
+PSNProfiles-style trackers work. Keep it out of the repo regardless, since
+it's rate-limited and tied to a personal Steam account.
+
 ## Project structure
 
 - `app/src/main/java/com/oasis/tracker/data` — Room entities/DAOs and the
   platform list.
 - `app/src/main/java/com/oasis/tracker/network` — Wikipedia + archive.org
-  search.
+  search, and Steam OpenID login + Web API (`network/steam`).
 - `app/src/main/java/com/oasis/tracker/update` — GitHub release check, APK
   download/install flow.
 - `app/src/main/java/com/oasis/tracker/ui` — Compose screens, navigation,

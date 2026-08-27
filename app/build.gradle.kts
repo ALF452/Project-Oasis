@@ -34,6 +34,12 @@ val releaseKeyAlias = signingProperty("ANDROID_KEY_ALIAS", "keyAlias")
 val releaseKeyPassword = signingProperty("ANDROID_KEY_PASSWORD", "keyPassword")
 val hasReleaseSigningConfig = listOf(releaseStoreFilePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 
+// Steam is an optional feature, not required for the app to build/install, so
+// a missing key doesn't fail the build — the Steam screen just shows it's
+// unconfigured. Never commit a real key to this public repo; it comes from
+// the STEAM_API_KEY GitHub Actions secret in CI, or keystore/keystore.properties locally.
+val steamApiKey = System.getenv("STEAM_API_KEY") ?: keystoreProps.getProperty("steamApiKey") ?: ""
+
 android {
     namespace = "com.oasis.tracker"
     compileSdk = 35
@@ -47,6 +53,8 @@ android {
 
         buildConfigField("String", "GITHUB_OWNER", "\"ALF452\"")
         buildConfigField("String", "GITHUB_REPO", "\"Project-Oasis\"")
+        buildConfigField("String", "STEAM_API_KEY", "\"$steamApiKey\"")
+        buildConfigField("String", "STEAM_RETURN_URL", "\"oasis://steamcallback\"")
     }
 
     signingConfigs {
@@ -115,6 +123,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.navigation:navigation-compose:2.8.4")
+    implementation("androidx.browser:browser:1.8.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

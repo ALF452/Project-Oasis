@@ -67,6 +67,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
         run: |
           ./gradlew assembleRelease \
             -PoasisVersionCode=${{ github.run_number }} \

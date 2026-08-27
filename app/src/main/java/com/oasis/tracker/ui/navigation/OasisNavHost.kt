@@ -13,6 +13,8 @@ import com.oasis.tracker.ui.gamedetail.GameDetailScreen
 import com.oasis.tracker.ui.mainmenu.MainMenuScreen
 import com.oasis.tracker.ui.platform.PlatformDetailScreen
 import com.oasis.tracker.ui.search.GameSearchScreen
+import com.oasis.tracker.ui.steam.SteamGameAchievementsScreen
+import com.oasis.tracker.ui.steam.SteamScreen
 import com.oasis.tracker.ui.tracker.MonthlyTrackerScreen
 import com.oasis.tracker.ui.tracker.YearlyTrackerScreen
 
@@ -28,8 +30,22 @@ fun OasisRoot() {
             MainMenuScreen(
                 onOpenMonthlyTracker = { navController.navigate(OasisDestinations.MONTHLY_TRACKER) },
                 onOpenYearlyTracker = { navController.navigate(OasisDestinations.YEARLY_TRACKER) },
-                onOpenPlatform = { platformId -> navController.navigate(OasisDestinations.platformDetail(platformId)) }
+                onOpenPlatform = { platformId -> navController.navigate(OasisDestinations.platformDetail(platformId)) },
+                onOpenSteam = { navController.navigate(OasisDestinations.STEAM) }
             )
+        }
+        composable(OasisDestinations.STEAM) {
+            SteamScreen(
+                onBack = { navController.popBackStack() },
+                onOpenGameAchievements = { appId -> navController.navigate(OasisDestinations.steamAchievements(appId)) }
+            )
+        }
+        composable(
+            route = OasisDestinations.STEAM_ACHIEVEMENTS,
+            arguments = listOf(navArgument(OasisDestinations.ARG_APP_ID) { type = NavType.IntType })
+        ) { backStackEntry ->
+            val appId = backStackEntry.arguments?.getInt(OasisDestinations.ARG_APP_ID) ?: 0
+            SteamGameAchievementsScreen(appId = appId, onBack = { navController.popBackStack() })
         }
         composable(OasisDestinations.MONTHLY_TRACKER) {
             MonthlyTrackerScreen(onBack = { navController.popBackStack() })
