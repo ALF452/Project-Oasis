@@ -31,6 +31,20 @@ class GameRepository(private val db: OasisDatabase) {
 
     suspend fun removeGame(game: GameEntity) = db.gameDao().delete(game)
 
+    suspend fun importedSteamAppIds(): Set<Int> = db.gameDao().getImportedSteamAppIds().toSet()
+
+    /** Adds a game imported from Steam, tagged with its appId so re-imports can skip it. */
+    suspend fun addGameFromSteam(title: String, coverUrl: String?, sourceUrl: String?, steamAppId: Int): Long =
+        db.gameDao().insert(
+            GameEntity(
+                platformId = Platforms.PC.id,
+                title = title,
+                coverUrl = coverUrl,
+                sourceUrl = sourceUrl,
+                steamAppId = steamAppId
+            )
+        )
+
     fun entriesForGame(gameId: Long): Flow<List<LogEntryEntity>> =
         db.logEntryDao().observeEntriesForGame(gameId)
 

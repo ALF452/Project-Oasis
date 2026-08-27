@@ -11,5 +11,7 @@ data class GameEntity(
     val coverUrl: String? = null,
     val sourceUrl: String? = null,
     val summary: String? = null,
-    val addedAt: Long = System.currentTimeMillis()
+    val addedAt: Long = System.currentTimeMillis(),
+    /** Set when this game was imported from a Steam library, for import dedup. */
+    val steamAppId: Int? = null
 )

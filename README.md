@@ -21,6 +21,11 @@ Dark charcoal UI with glowing neon-blue borders throughout.
   in place, keeping your logged data.
 - **Steam** — connect your Steam account (OpenID sign-in, no password shared
   with the app) to browse your library and per-game achievement completion.
+  One-tap import brings played games into your PC library, logging each
+  game's lifetime playtime as a single diary entry dated the day you
+  imported it (Steam's API doesn't expose day-by-day history). Re-running
+  the import only adds newly-played games — it won't duplicate or overwrite
+  entries you've already got.
 
 ## How updates work
 

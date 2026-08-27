@@ -51,6 +51,7 @@ import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @Composable
 fun SteamScreen(onBack: () -> Unit, onOpenGameAchievements: (Int) -> Unit) {
@@ -142,7 +143,10 @@ private fun ConnectedLibrary(
     onDisconnect: () -> Unit
 ) {
     var games by remember(profile.steamId) { mutableStateOf<List<SteamGameSummary>?>(null) }
+    var importing by remember { mutableStateOf(false) }
+    var importResult by remember { mutableStateOf<String?>(null) }
     val app = rememberOasisApp()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(profile.steamId) {
         games = app.steamRepository.getOwnedGames(profile.steamId)
@@ -173,6 +177,60 @@ private fun ConnectedLibrary(
         }
 
         val currentGames = games
+        if (currentGames != null) {
+            NeonPanel(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable(enabled = !importing) {
+                        importing = true
+                        scope.launch {
+                            val playedGames = currentGames.filter { it.playtimeMinutes > 0 }
+                            val alreadyImported = app.gameRepository.importedSteamAppIds()
+                            val newGames = playedGames.filter { it.appId !in alreadyImported }
+                            for (game in newGames) {
+                                val gameId = app.gameRepository.addGameFromSteam(
+                                    title = game.name,
+                                    coverUrl = "https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appId}/library_600x900.jpg",
+                                    sourceUrl = "https://store.steampowered.com/app/${game.appId}",
+                                    steamAppId = game.appId
+                                )
+                                app.gameRepository.logSession(
+                                    gameId = gameId,
+                                    date = LocalDate.now(),
+                                    hours = game.playtimeMinutes / 60f,
+                                    notes = "Imported from Steam — lifetime playtime as of ${LocalDate.now()}"
+                                )
+                            }
+                            val skipped = playedGames.size - newGames.size
+                            importResult = "Imported ${newGames.size} game(s)" +
+                                if (skipped > 0) " · $skipped already in your PC library" else ""
+                            importing = false
+                        }
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (importing) "IMPORTING…" else "IMPORT PLAYED GAMES TO PC LIBRARY",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    if (importing) CircularProgressIndicator(modifier = Modifier.size(18.dp), color = NeonBlue)
+                }
+            }
+            importResult?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+        }
+
         when {
             currentGames == null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = NeonBlue)

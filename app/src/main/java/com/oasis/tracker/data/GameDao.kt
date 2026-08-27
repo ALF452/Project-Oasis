@@ -22,4 +22,7 @@ interface GameDao {
 
     @Query("SELECT * FROM games ORDER BY title ASC")
     fun observeAllGames(): Flow<List<GameEntity>>
+
+    @Query("SELECT steamAppId FROM games WHERE steamAppId IS NOT NULL")
+    suspend fun getImportedSteamAppIds(): List<Int>
 }
