@@ -1,6 +1,7 @@
 package com.oasis.tracker.ui.components
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.* // weight() as a single named import collides with an internal same-named property in this Compose version
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ fun <T> ReorderableTileGrid(
     items: List<T>,
     itemId: (T) -> String,
     onOrderChanged: (List<T>) -> Unit,
+    onItemClick: (T) -> Unit,
     modifier: Modifier = Modifier,
     columns: Int = 2,
     horizontalSpacing: Dp = 14.dp,
@@ -67,6 +69,9 @@ fun <T> ReorderableTileGrid(
                                         Modifier
                                     }
                                 )
+                                .pointerInput(id) {
+                                    detectTapGestures(onTap = { onItemClick(item) })
+                                }
                                 .pointerInput(id) {
                                     detectDragGesturesAfterLongPress(
                                         onDragStart = { localStart ->

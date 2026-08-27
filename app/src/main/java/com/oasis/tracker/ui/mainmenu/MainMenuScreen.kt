@@ -121,9 +121,10 @@ fun MainMenuScreen(
                 itemId = { it.id },
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
-                }
+                },
+                onItemClick = { platform -> onOpenPlatform(platform.id) }
             ) { platform ->
-                MenuTile(label = platform.glyph, sublabel = platform.displayName, onClick = { onOpenPlatform(platform.id) })
+                MenuTile(label = platform.glyph, sublabel = platform.displayName)
             }
         }
 
@@ -140,9 +141,10 @@ fun MainMenuScreen(
                 itemId = { it.id },
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
-                }
+                },
+                onItemClick = { platform -> onOpenPlatform(platform.id) }
             ) { platform ->
-                MenuTile(label = platform.glyph, sublabel = platform.displayName, onClick = { onOpenPlatform(platform.id) })
+                MenuTile(label = platform.glyph, sublabel = platform.displayName)
             }
         }
 
@@ -167,8 +169,9 @@ fun MainMenuScreen(
 }
 
 @Composable
-private fun MenuTile(label: String, sublabel: String, onClick: () -> Unit) {
-    NeonPanel(modifier = Modifier.fillMaxWidth().height(96.dp).clickable(onClick = onClick)) {
+private fun MenuTile(label: String, sublabel: String, onClick: (() -> Unit)? = null) {
+    val tileModifier = Modifier.fillMaxWidth().height(96.dp)
+    NeonPanel(modifier = if (onClick != null) tileModifier.clickable(onClick = onClick) else tileModifier) {
         Column(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             verticalArrangement = Arrangement.Center,
