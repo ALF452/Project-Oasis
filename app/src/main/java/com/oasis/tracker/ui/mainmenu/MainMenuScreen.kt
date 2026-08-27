@@ -9,20 +9,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.oasis.tracker.data.PlatformDef
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.ui.components.NeonPanel
+import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.TextSecondary
+import com.oasis.tracker.ui.update.UpdateBanner
+import com.oasis.tracker.update.UpdateState
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainMenuScreen(
@@ -30,6 +44,27 @@ fun MainMenuScreen(
     onOpenYearlyTracker: () -> Unit,
     onOpenPlatform: (String) -> Unit
 ) {
+    val app = rememberOasisApp()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val updateState by app.updateManager.state.collectAsState()
+
+    // Re-check on cold start, and again any time the user returns to this
+    // screen (e.g. after backing out of an update install that didn't finish).
+    LaunchedEffect(Unit) {
+        app.updateManager.checkForUpdate()
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { app.updateManager.checkForUpdate() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         contentPadding = PaddingValues(16.dp),
@@ -37,7 +72,7 @@ fun MainMenuScreen(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+        item(span = { GridItemSpan(2) }) {
             Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 Text(
                     text = "OASIS",
@@ -55,23 +90,51 @@ fun MainMenuScreen(
             }
         }
 
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(1) }) {
+        item(span = { GridItemSpan(1) }) {
             MenuTile(label = "MONTHLY", sublabel = "Tracker", onClick = onOpenMonthlyTracker)
         }
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(1) }) {
+        item(span = { GridItemSpan(1) }) {
             MenuTile(label = "YEARLY", sublabel = "Tracker", onClick = onOpenYearlyTracker)
         }
 
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+        item(span = { GridItemSpan(2) }) {
             Text(
                 text = "PLATFORMS",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-
-        items(Platforms.ALL) { platform: PlatformDef ->
+        items(Platforms.MODERN_PLATFORMS) { platform: PlatformDef ->
             MenuTile(label = platform.glyph, sublabel = platform.displayName, onClick = { onOpenPlatform(platform.id) })
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "RETRO",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        items(Platforms.RETRO_PLATFORMS) { platform: PlatformDef ->
+            MenuTile(label = platform.glyph, sublabel = platform.displayName, onClick = { onOpenPlatform(platform.id) })
+        }
+
+        if (updateState != UpdateState.Idle && updateState != UpdateState.Checking) {
+            item(span = { GridItemSpan(2) }) {
+                UpdateBanner(
+                    state = updateState,
+                    onDownload = { (updateState as? UpdateState.Available)?.let { app.updateManager.startDownload(it.info) } },
+                    onInstall = {
+                        val ready = updateState as? UpdateState.ReadyToInstall ?: return@UpdateBanner
+                        if (app.updateManager.canInstallPackages()) {
+                            context.startActivity(app.updateManager.installApkIntent(ready.apkFile))
+                        } else {
+                            context.startActivity(app.updateManager.installPermissionSettingsIntent())
+                        }
+                    },
+                    onDismiss = { app.updateManager.dismiss() }
+                )
+            }
         }
     }
 }
