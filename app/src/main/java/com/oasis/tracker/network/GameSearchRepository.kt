@@ -45,21 +45,16 @@ class GameSearchRepository(
         response.pages.map { page ->
             async {
                 val directCover = normalizeProtocolRelativeUrl(page.thumbnail?.url)
-                // TEMPORARY: always fetch the summary (even when the direct cover already
-                // resolved) and report everything raw, so a device screenshot shows exactly
-                // what each endpoint actually returned instead of guessing blind again.
-                val summaryResult = runCatching { wikipediaApi.summary(page.key) }
-                val summary = summaryResult.getOrNull()
-                val summaryCover = summary?.let { normalizeProtocolRelativeUrl(it.thumbnail?.url ?: it.originalimage?.url) }
-                val debug = "search.thumb=${page.thumbnail} | summary.err=${summaryResult.exceptionOrNull()?.message} | " +
-                    "summary.thumb=${summary?.thumbnail} | summary.orig=${summary?.originalimage}"
+                val summaryCover = if (directCover == null) {
+                    val summary = runCatching { wikipediaApi.summary(page.key) }.getOrNull()
+                    summary?.let { normalizeProtocolRelativeUrl(it.thumbnail?.url ?: it.originalimage?.url) }
+                } else null
                 GameSearchResult(
                     title = page.title,
                     subtitle = page.description ?: stripHtml(page.excerpt),
                     coverUrl = directCover ?: summaryCover,
                     sourceUrl = "https://en.wikipedia.org/wiki/${page.key}",
-                    source = SearchSource.WIKIPEDIA,
-                    debugInfo = debug
+                    source = SearchSource.WIKIPEDIA
                 )
             }
         }.awaitAll()
