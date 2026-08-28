@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -33,8 +37,14 @@ fun OasisRoot(initialDestination: String? = null) {
     val navController = rememberNavController()
     // MAIN_MENU stays the real start destination (so back navigation always lands
     // home) — a shortcut just pushes its target on top of it once, right after launch.
+    // shortcutConsumed is rememberSaveable (not plain remember) so that if the OS
+    // later kills and recreates this Activity from the same original launch Intent
+    // (a low-memory recreate, not a fresh shortcut tap), this doesn't fire again and
+    // push a second copy of the destination onto the already-restored back stack.
+    var shortcutConsumed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(initialDestination) {
-        if (initialDestination != null && initialDestination in SHORTCUT_DESTINATIONS) {
+        if (!shortcutConsumed && initialDestination != null && initialDestination in SHORTCUT_DESTINATIONS) {
+            shortcutConsumed = true
             navController.navigate(initialDestination)
         }
     }
