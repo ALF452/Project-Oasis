@@ -183,7 +183,7 @@ fun GameSearchScreen(
                                         app.gameRepository.addGame(
                                             platformId = mode.platformId,
                                             title = result.title,
-                                            coverUrl = app.searchRepository.resolveBestCoverUrl(result),
+                                            coverUrl = result.coverUrl,
                                             sourceUrl = result.sourceUrl,
                                             summary = result.subtitle
                                         )
@@ -195,7 +195,7 @@ fun GameSearchScreen(
                                     scope.launch {
                                         app.gameRepository.addToBacklog(
                                             title = result.title,
-                                            coverUrl = app.searchRepository.resolveBestCoverUrl(result),
+                                            coverUrl = result.coverUrl,
                                             sourceUrl = result.sourceUrl,
                                             summary = result.subtitle
                                         )
@@ -220,7 +220,7 @@ fun GameSearchScreen(
                     val gameId = app.gameRepository.addGame(
                         platformId = platformId,
                         title = result.title,
-                        coverUrl = app.searchRepository.resolveBestCoverUrl(result),
+                        coverUrl = result.coverUrl,
                         sourceUrl = result.sourceUrl,
                         summary = result.subtitle
                     )

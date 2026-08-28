@@ -1,6 +1,7 @@
 package com.oasis.tracker.network
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 @Serializable
 data class WikiSearchResponse(val pages: List<WikiSearchPage> = emptyList())
@@ -15,9 +16,16 @@ data class WikiSearchPage(
     val thumbnail: WikiThumbnail? = null
 )
 
+/**
+ * Wikipedia's two REST APIs don't agree on what this field is called: the
+ * page-summary endpoint (RESTBase) names it "source", while the newer core
+ * search endpoint uses "url". Accepting both means we don't have to be sure
+ * which one a given response actually used — with ignoreUnknownKeys on, a
+ * wrong guess here doesn't error, it just silently deserializes to null.
+ */
 @Serializable
 data class WikiThumbnail(
-    val url: String? = null,
+    @JsonNames("source") val url: String? = null,
     val width: Int? = null,
     val height: Int? = null
 )

@@ -1,6 +1,7 @@
 package com.oasis.tracker.network
 
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
 /** Outcome of a [GameSearchRepository.search] call, distinguishing a genuine
@@ -32,18 +33,33 @@ class GameSearchRepository(
         }
     }
 
-    private suspend fun searchWikipedia(query: String): List<GameSearchResult> {
+    /**
+     * The lightweight search endpoint sometimes has no thumbnail for a page even
+     * when one exists — the fuller page-summary endpoint (the article's actual
+     * lead image) usually does. Resolved concurrently per result here, at search
+     * time, so both the results list itself and whatever gets added from it show
+     * real cover art rather than only fixing it up after the fact on add.
+     */
+    private suspend fun searchWikipedia(query: String): List<GameSearchResult> = coroutineScope {
         val response = wikipediaApi.search(query)
-        return response.pages.map { page ->
-            GameSearchResult(
-                title = page.title,
-                subtitle = page.description ?: stripHtml(page.excerpt),
-                coverUrl = normalizeProtocolRelativeUrl(page.thumbnail?.url),
-                sourceUrl = "https://en.wikipedia.org/wiki/${page.key}",
-                source = SearchSource.WIKIPEDIA
-            )
-        }
+        response.pages.map { page ->
+            async {
+                val directCover = normalizeProtocolRelativeUrl(page.thumbnail?.url)
+                GameSearchResult(
+                    title = page.title,
+                    subtitle = page.description ?: stripHtml(page.excerpt),
+                    coverUrl = directCover ?: fetchSummaryCoverUrl(page.key),
+                    sourceUrl = "https://en.wikipedia.org/wiki/${page.key}",
+                    source = SearchSource.WIKIPEDIA
+                )
+            }
+        }.awaitAll()
     }
+
+    private suspend fun fetchSummaryCoverUrl(pageKey: String): String? =
+        runCatching { wikipediaApi.summary(pageKey) }
+            .getOrNull()
+            ?.let { normalizeProtocolRelativeUrl(it.thumbnail?.url ?: it.originalimage?.url) }
 
     private suspend fun searchArchiveOrg(query: String): List<GameSearchResult> {
         val response = archiveOrgApi.search("$query AND mediatype:(software OR image)")
@@ -65,19 +81,4 @@ class GameSearchRepository(
     }
 
     private fun stripHtml(text: String?): String? = text?.replace(Regex("<[^>]*>"), "")
-
-    /**
-     * Wikipedia's lightweight search endpoint often omits a thumbnail even when
-     * the page has one, since it's only returning search-snippet metadata — the
-     * fuller page-summary endpoint (the article's actual lead image) usually has
-     * it. Only worth the extra request at the point a result is actually being
-     * added, not for every row in a 15-result search list.
-     */
-    suspend fun resolveBestCoverUrl(result: GameSearchResult): String? {
-        if (result.coverUrl != null || result.source != SearchSource.WIKIPEDIA) return result.coverUrl
-        val key = result.sourceUrl.substringAfterLast("/wiki/")
-        return runCatching { wikipediaApi.summary(key) }
-            .getOrNull()
-            ?.let { normalizeProtocolRelativeUrl(it.thumbnail?.url ?: it.originalimage?.url) }
-    }
 }
