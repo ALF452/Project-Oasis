@@ -10,8 +10,14 @@ Dark charcoal UI with glowing neon-blue borders throughout.
 
 - **Main menu** — Monthly Tracker, Yearly Tracker, and a tile per platform
   (PC, PS5, PS4, Xbox Series X|S, Xbox One, Switch, Switch 2, Retro/Other).
+  Long-press and drag any platform tile to reorder it, homescreen-style —
+  your order is remembered.
 - **Per-platform library** — search Wikipedia/archive.org for a game and add
   it to that platform's shelf.
+- **Top 250** — build your own ranked list from games you've logged. Add a
+  game from the menu's Top 250 screen, then long-press and drag to reorder
+  it; tap a ranked game to jump straight to its diary (hours played, and
+  which year/month/day).
 - **Game diary** — a month calendar per game; tap a day to log hours played
   (and optional notes). Highlighted days show hours at a glance.
 - **Monthly/Yearly Tracker** — total hours and a per-game breakdown for the
