@@ -51,6 +51,11 @@ fun SteamLoginScreen(onBack: () -> Unit) {
                 }
                 loadUrl(loginUrl)
             }
-        }
+        },
+        // WebView holds real native (Chromium engine) resources that Compose
+        // won't release on its own — just detaching it from the hierarchy
+        // when this screen is left isn't enough and leaks memory each time
+        // the user opens the login screen.
+        onRelease = { it.destroy() }
     )
 }
