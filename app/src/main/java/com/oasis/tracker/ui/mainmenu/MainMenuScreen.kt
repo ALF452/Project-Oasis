@@ -408,14 +408,14 @@ private fun FavoriteOptionsDialog(game: GameEntity, onViewGame: () -> Unit, onRe
             Column {
                 Text(
                     "VIEW GAME",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.fillMaxWidth().clickable(onClick = onViewGame).padding(vertical = 12.dp)
                 )
                 Text(
                     "REMOVE FROM FAVORITES",
                     style = MaterialTheme.typography.bodyLarge,
                     color = DangerMagenta,
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onRemove).padding(vertical = 12.dp)
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onRemove).padding(top = 28.dp, bottom = 12.dp)
                 )
             }
         },
