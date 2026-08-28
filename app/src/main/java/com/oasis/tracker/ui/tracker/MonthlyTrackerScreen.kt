@@ -27,10 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oasis.tracker.data.Platforms
-import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -46,11 +44,7 @@ fun MonthlyTrackerScreen(onBack: () -> Unit) {
     val entries by app.gameRepository.entriesForMonth(month).collectAsState(initial = emptyList())
 
     val totalHours = entries.sumOf { it.hours.toDouble() }.toFloat()
-    val byGame = remember(entries) {
-        entries.groupBy { Triple(it.gameId, it.gameTitle, it.platformId) }
-            .map { (key, list) -> GameHoursSummary(key.second, key.third, list.sumOf { e -> e.hours.toDouble() }.toFloat()) }
-            .sortedByDescending { it.hours }
-    }
+    val byGame = remember(entries) { entries.summarizeByGame() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -80,17 +74,7 @@ fun MonthlyTrackerScreen(onBack: () -> Unit) {
             }
         }
 
-        NeonPanel(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Text("TOTAL HOURS", style = MaterialTheme.typography.labelLarge)
-                Text(
-                    "%.1f h".format(totalHours),
-                    style = MaterialTheme.typography.headlineLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
+        TotalHoursPanel(totalHours)
 
         if (byGame.isEmpty()) {
             Text(
@@ -116,5 +100,3 @@ fun MonthlyTrackerScreen(onBack: () -> Unit) {
         }
     }
 }
-
-data class GameHoursSummary(val gameTitle: String, val platformId: String, val hours: Float)
