@@ -21,15 +21,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,8 +59,8 @@ import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.diagnostics.CrashReportDialog
 import com.oasis.tracker.ui.rememberOasisApp
-import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.CharcoalSurface
+import com.oasis.tracker.ui.theme.DangerMagenta
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.NeonPurple
 import com.oasis.tracker.ui.theme.TextSecondary
@@ -366,68 +365,95 @@ private fun FavoritesRow(
     onRemove: (Long) -> Unit,
     onAddSlot: () -> Unit
 ) {
+    // Tapping a filled slot opens this options dialog rather than navigating straight
+    // to the game, since remove-from-favorites needs a home now that there's no more
+    // corner "x" button crowding the tile itself.
+    var optionsFor by remember { mutableStateOf<GameEntity?>(null) }
+
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         repeat(FavoritesStore.MAX_FAVORITES) { index ->
             val game = favorites.getOrNull(index)
             Box(modifier = Modifier.weight(1f).aspectRatio(2f / 3f)) {
                 if (game != null) {
-                    FilledFavoriteSlot(game = game, onClick = { onOpenGame(game.id) }, onRemove = { onRemove(game.id) })
+                    FilledFavoriteSlot(game = game, onClick = { optionsFor = game })
                 } else {
                     EmptyFavoriteSlot(onClick = onAddSlot)
                 }
             }
         }
     }
+
+    optionsFor?.let { game ->
+        FavoriteOptionsDialog(
+            game = game,
+            onViewGame = {
+                optionsFor = null
+                onOpenGame(game.id)
+            },
+            onRemove = {
+                optionsFor = null
+                onRemove(game.id)
+            },
+            onDismiss = { optionsFor = null }
+        )
+    }
 }
 
 @Composable
-private fun FilledFavoriteSlot(game: GameEntity, onClick: () -> Unit, onRemove: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (game.coverUrl != null) {
-            AsyncImage(
-                model = game.coverUrl,
-                contentDescription = game.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onClick)
-            )
-        } else {
-            // No cover art found from either source for this one — show the title
-            // instead of leaving the tile looking like a blank, broken void.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(CharcoalSurface)
-                    .border(1.dp, TextSecondary, RoundedCornerShape(8.dp))
-                    .clickable(onClick = onClick)
-                    .padding(6.dp),
-                contentAlignment = Alignment.Center
-            ) {
+private fun FavoriteOptionsDialog(game: GameEntity, onViewGame: () -> Unit, onRemove: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(game.title, color = NeonBlue) },
+        text = {
+            Column {
                 Text(
-                    game.title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = NeonBlue,
-                    textAlign = TextAlign.Center,
-                    maxLines = 4
+                    "VIEW GAME",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onViewGame).padding(vertical = 12.dp)
+                )
+                Text(
+                    "REMOVE FROM FAVORITES",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = DangerMagenta,
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onRemove).padding(vertical = 12.dp)
                 )
             }
-        }
-        IconButton(
-            onClick = onRemove,
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
+    )
+}
+
+@Composable
+private fun FilledFavoriteSlot(game: GameEntity, onClick: () -> Unit) {
+    if (game.coverUrl != null) {
+        AsyncImage(
+            model = game.coverUrl,
+            contentDescription = game.title,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(2.dp)
-                .size(22.dp)
-                .background(CharcoalBackground.copy(alpha = 0.75f), CircleShape)
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+        )
+    } else {
+        // No cover art found from either source for this one — show the title
+        // instead of leaving the tile looking like a blank, broken void.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(8.dp))
+                .background(CharcoalSurface)
+                .border(1.dp, TextSecondary, RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(6.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Icon(
-                Icons.Filled.Close,
-                contentDescription = "Remove favorite",
-                tint = TextSecondary,
-                modifier = Modifier.size(14.dp)
+            Text(
+                game.title,
+                style = MaterialTheme.typography.labelMedium,
+                color = NeonBlue,
+                textAlign = TextAlign.Center,
+                maxLines = 4
             )
         }
     }
