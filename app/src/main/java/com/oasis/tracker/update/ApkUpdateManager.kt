@@ -6,9 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.oasis.tracker.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,13 +34,40 @@ sealed interface UpdateState {
 class ApkUpdateManager(private val appContext: Context) {
 
     private val checker = UpdateChecker()
+    private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state.asStateFlow()
 
     private var enqueuedDownloadId: Long? = null
     private var receiver: BroadcastReceiver? = null
+    private var lastCheckedAtElapsedMs: Long = 0L
+
+    /** versionCode the on-disk [apkFile] was downloaded for, so a leftover file from an
+     *  update that's already been installed isn't mistaken for one still pending. */
+    private var pendingApkVersionCode: Int
+        get() = prefs.getInt(KEY_PENDING_VERSION_CODE, -1)
+        set(value) = prefs.edit().putInt(KEY_PENDING_VERSION_CODE, value).apply()
 
     suspend fun checkForUpdate() {
+        if (apkFile().exists()) {
+            if (pendingApkVersionCode > BuildConfig.VERSION_CODE) {
+                _state.value = UpdateState.ReadyToInstall(apkFile())
+                return
+            }
+            // Stale leftover from an update that's already installed (or from a
+            // build downgrade) — clear it so it can't get stuck offering forever.
+            apkFile().delete()
+        }
+
+        // The GitHub REST API is unauthenticated here and rate-limited to 60
+        // requests/hour per IP; re-checking on every app resume can burn through
+        // that fast, so skip re-checks within a short window of the last one.
+        val now = SystemClock.elapsedRealtime()
+        if (lastCheckedAtElapsedMs != 0L && now - lastCheckedAtElapsedMs < MIN_RECHECK_INTERVAL_MS) {
+            return
+        }
+        lastCheckedAtElapsedMs = now
+
         _state.value = UpdateState.Checking
         val info = checker.checkForUpdate()
         _state.value = if (info != null) UpdateState.Available(info) else UpdateState.Idle
@@ -46,6 +75,7 @@ class ApkUpdateManager(private val appContext: Context) {
 
     fun startDownload(info: UpdateInfo) {
         apkFile().delete()
+        pendingApkVersionCode = info.versionCode
         val downloadManager = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
             .setTitle("Oasis update ${info.versionName}")
@@ -66,11 +96,7 @@ class ApkUpdateManager(private val appContext: Context) {
                 val completedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (completedId == -1L || completedId != enqueuedDownloadId) return
                 unregisterCompletionReceiver()
-                _state.value = if (apkFile().exists()) {
-                    UpdateState.ReadyToInstall(apkFile())
-                } else {
-                    UpdateState.Error("Download failed. Check your connection and try again.")
-                }
+                _state.value = resolveDownloadResult(completedId)
             }
         }
         ContextCompat.registerReceiver(
@@ -80,6 +106,29 @@ class ApkUpdateManager(private val appContext: Context) {
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
         receiver = newReceiver
+    }
+
+    /**
+     * The completed broadcast fires whether the download succeeded or failed —
+     * checking [apkFile] for mere existence isn't enough, since a failed or
+     * partial download can still leave a (truncated) file behind. Ask
+     * DownloadManager for the real terminal status instead.
+     */
+    private fun resolveDownloadResult(downloadId: Long): UpdateState {
+        val downloadManager = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.query(DownloadManager.Query().setFilterById(downloadId)).use { cursor ->
+            if (!cursor.moveToFirst()) {
+                apkFile().delete()
+                return UpdateState.Error("Download failed. Check your connection and try again.")
+            }
+            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            if (status == DownloadManager.STATUS_SUCCESSFUL && apkFile().exists()) {
+                return UpdateState.ReadyToInstall(apkFile())
+            }
+            apkFile().delete()
+            val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+            return UpdateState.Error("Download failed (code $reason). Check your connection and try again.")
+        }
     }
 
     private fun unregisterCompletionReceiver() {
@@ -109,5 +158,8 @@ class ApkUpdateManager(private val appContext: Context) {
 
     companion object {
         private const val APK_FILE_NAME = "oasis-update.apk"
+        private const val PREFS_NAME = "oasis_update_manager"
+        private const val KEY_PENDING_VERSION_CODE = "pending_apk_version_code"
+        private const val MIN_RECHECK_INTERVAL_MS = 10 * 60 * 1000L
     }
 }
