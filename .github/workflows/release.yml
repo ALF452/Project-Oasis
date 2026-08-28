@@ -91,13 +91,41 @@ jobs:
           # fine, but would break updates (or the install itself) for anyone
           # who already has an earlier build installed. Catch that here,
           # before publishing, rather than after a user reports it.
-          apk_fp=$(keytool -printcert -jarfile "$APK" 2>/dev/null | awk -F'SHA256: ' '/SHA256:/{print $2; exit}')
-          if [ -z "$apk_fp" ]; then
-            echo "::error::The built APK isn't signed at all. This almost always means the KEYSTORE_*/KEY_* secrets weren't picked up by Gradle — check they're set exactly as documented in the README, then re-run."
+          #
+          # This has to be apksigner, not `keytool -printcert -jarfile`:
+          # keytool only understands the legacy JAR signing scheme, while
+          # AGP signs release APKs with the modern v2/v3 APK Signature
+          # Scheme by default — keytool finds nothing there and reports the
+          # APK as unsigned even when it's signed correctly. apksigner
+          # understands all of v1-v4 and is the actual tool for this job.
+          build_tools_dir=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n1)
+          apksigner="$build_tools_dir/apksigner"
+          if [ ! -x "$apksigner" ]; then
+            echo "::error::Couldn't find apksigner under $ANDROID_HOME/build-tools to verify the release APK's signature."
             exit 1
           fi
 
-          keystore_fp=$(keytool -list -v -keystore "$KEYSTORE" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null | awk -F'SHA256: ' '/SHA256:/{print $2; exit}')
+          extract_sha256() {
+            grep -m1 'SHA-256 digest' | awk -F': ' '{print $2}' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]'
+          }
+
+          apk_sign_output=$("$apksigner" verify --print-certs "$APK" 2>&1)
+          apk_fp=$(printf '%s\n' "$apk_sign_output" | extract_sha256)
+          if [ -z "$apk_fp" ]; then
+            echo "::error::apksigner couldn't verify a signature on the built APK. This almost always means the KEYSTORE_*/KEY_* secrets weren't picked up by Gradle — check they're set exactly as documented in the README, then re-run."
+            echo "---- apksigner verify output ----"
+            printf '%s\n' "$apk_sign_output"
+            exit 1
+          fi
+
+          keystore_cert_output=$(keytool -list -v -keystore "$KEYSTORE" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>&1)
+          keystore_fp=$(printf '%s\n' "$keystore_cert_output" | grep -m1 'SHA256:' | sed -E 's/.*SHA256:[[:space:]]*//' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          if [ -z "$keystore_fp" ]; then
+            echo "::error::Couldn't read a fingerprint back out of the keystore itself — this points at a bug in this verification step, not the build. Failing safe rather than skipping the check."
+            echo "---- keytool -list -v output ----"
+            printf '%s\n' "$keystore_cert_output"
+            exit 1
+          fi
 
           if [ "$apk_fp" != "$keystore_fp" ]; then
             echo "::error::The release APK's signing certificate doesn't match the configured keystore (APK=$apk_fp, keystore=$keystore_fp). Refusing to publish it, since it would break in-place updates for anyone with an earlier build installed."
