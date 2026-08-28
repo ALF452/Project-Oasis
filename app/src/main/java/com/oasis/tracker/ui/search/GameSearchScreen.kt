@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,10 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.oasis.tracker.data.FavoritesStore
+import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.network.GameSearchResult
 import com.oasis.tracker.network.SearchOutcome
 import com.oasis.tracker.network.SearchSource
@@ -51,10 +55,12 @@ import com.oasis.tracker.ui.theme.TextSecondary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** Where a search result goes: tracked under a platform, or parked in the backlog with no platform yet. */
+/** Where a search result goes: tracked under a platform, parked in the backlog with no
+ *  platform yet, or pinned as a favorite (also needs a platform, chosen after picking it). */
 sealed interface GameSearchMode {
     data class AddToLibrary(val platformId: String) : GameSearchMode
     data object AddToBacklog : GameSearchMode
+    data object AddToFavorites : GameSearchMode
 }
 
 @Composable
@@ -64,9 +70,13 @@ fun GameSearchScreen(
     onGameAdded: () -> Unit
 ) {
     val app = rememberOasisApp()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var query by remember { mutableStateOf("") }
+    // Set when a result is tapped in AddToFavorites mode: that mode still needs a
+    // platform (every tracked game has one), so the actual add waits on this choice.
+    var pendingFavorite by remember { mutableStateOf<GameSearchResult?>(null) }
     var results by remember { mutableStateOf<List<GameSearchResult>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
@@ -100,7 +110,11 @@ fun GameSearchScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        val title = if (mode is GameSearchMode.AddToBacklog) "Add to Backlog" else "Add Game"
+        val title = when (mode) {
+            GameSearchMode.AddToBacklog -> "Add to Backlog"
+            GameSearchMode.AddToFavorites -> "Add Favorite"
+            is GameSearchMode.AddToLibrary -> "Add Game"
+        }
         TopAppBar(
             title = { Text(title, style = MaterialTheme.typography.titleLarge) },
             navigationIcon = {
@@ -160,24 +174,33 @@ fun GameSearchScreen(
                         result = result,
                         enabled = !adding,
                         onClick = {
-                            adding = true
-                            scope.launch {
-                                when (mode) {
-                                    is GameSearchMode.AddToLibrary -> app.gameRepository.addGame(
-                                        platformId = mode.platformId,
-                                        title = result.title,
-                                        coverUrl = result.coverUrl,
-                                        sourceUrl = result.sourceUrl,
-                                        summary = result.subtitle
-                                    )
-                                    GameSearchMode.AddToBacklog -> app.gameRepository.addToBacklog(
-                                        title = result.title,
-                                        coverUrl = result.coverUrl,
-                                        sourceUrl = result.sourceUrl,
-                                        summary = result.subtitle
-                                    )
+                            when (mode) {
+                                is GameSearchMode.AddToLibrary -> {
+                                    adding = true
+                                    scope.launch {
+                                        app.gameRepository.addGame(
+                                            platformId = mode.platformId,
+                                            title = result.title,
+                                            coverUrl = result.coverUrl,
+                                            sourceUrl = result.sourceUrl,
+                                            summary = result.subtitle
+                                        )
+                                        onGameAdded()
+                                    }
                                 }
-                                onGameAdded()
+                                GameSearchMode.AddToBacklog -> {
+                                    adding = true
+                                    scope.launch {
+                                        app.gameRepository.addToBacklog(
+                                            title = result.title,
+                                            coverUrl = result.coverUrl,
+                                            sourceUrl = result.sourceUrl,
+                                            summary = result.subtitle
+                                        )
+                                        onGameAdded()
+                                    }
+                                }
+                                GameSearchMode.AddToFavorites -> pendingFavorite = result
                             }
                         }
                     )
@@ -185,6 +208,51 @@ fun GameSearchScreen(
             }
         }
     }
+
+    pendingFavorite?.let { result ->
+        PlatformPickerDialog(
+            onSelect = { platformId ->
+                pendingFavorite = null
+                adding = true
+                scope.launch {
+                    val gameId = app.gameRepository.addGame(
+                        platformId = platformId,
+                        title = result.title,
+                        coverUrl = result.coverUrl,
+                        sourceUrl = result.sourceUrl,
+                        summary = result.subtitle
+                    )
+                    FavoritesStore(context).addFavorite(gameId)
+                    onGameAdded()
+                }
+            },
+            onDismiss = { pendingFavorite = null }
+        )
+    }
+}
+
+@Composable
+private fun PlatformPickerDialog(onSelect: (String) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Which platform?", color = NeonBlue) },
+        text = {
+            LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+                items(Platforms.ALL) { platform ->
+                    Text(
+                        platform.displayName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(platform.id) }
+                            .padding(vertical = 12.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
+    )
 }
 
 @Composable

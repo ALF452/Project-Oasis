@@ -11,7 +11,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.oasis.tracker.ui.backlog.BacklogScreen
 import com.oasis.tracker.ui.diary.DiaryFeedScreen
-import com.oasis.tracker.ui.favorites.FavoritesPickerScreen
 import com.oasis.tracker.ui.gamedetail.GameDetailScreen
 import com.oasis.tracker.ui.mainmenu.MainMenuScreen
 import com.oasis.tracker.ui.platform.PlatformDetailScreen
@@ -47,7 +46,11 @@ fun OasisRoot() {
             )
         }
         composable(OasisDestinations.FAVORITES_ADD) {
-            FavoritesPickerScreen(onBack = { navController.popBackStack() })
+            GameSearchScreen(
+                mode = GameSearchMode.AddToFavorites,
+                onBack = { navController.popBackStack() },
+                onGameAdded = { navController.popBackStack() }
+            )
         }
         composable(OasisDestinations.DIARY) {
             DiaryFeedScreen(

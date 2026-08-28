@@ -171,7 +171,7 @@ fun MainMenuScreen(
                     onOpenGame(gameId)
                 },
                 onRemove = { gameId ->
-                    favoritesStore.removeFavorite(gameId, allGames.orEmpty().map { it.id }.toSet())
+                    favoritesStore.removeFavorite(gameId)
                     favoriteIds = favoriteIds - gameId
                 },
                 onAddSlot = onOpenFavoritesPicker
