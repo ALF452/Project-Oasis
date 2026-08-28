@@ -177,6 +177,12 @@ fun MainMenuScreen(
         }
 
         item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "MY TOP 5",
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+        item(span = { GridItemSpan(2) }) {
             FavoritesRow(
                 favorites = favoriteGames,
                 onOpenGame = { gameId ->
