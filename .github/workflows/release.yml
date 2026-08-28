@@ -105,12 +105,16 @@ jobs:
             exit 1
           fi
 
-          extract_sha256() {
-            grep -m1 'SHA-256 digest' | awk -F': ' '{print $2}' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]'
+          # Strip everything up to and including the last occurrence of the
+          # label on the matched line, greedily — robust regardless of
+          # whatever else (a "Signer #1" prefix, extra colons) precedes it,
+          # unlike splitting on a fixed field separator.
+          extract_apk_sha256() {
+            grep -m1 'SHA-256 digest' | sed -E 's/.*SHA-256 digest:[[:space:]]*//' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]'
           }
 
           apk_sign_output=$("$apksigner" verify --print-certs "$APK" 2>&1)
-          apk_fp=$(printf '%s\n' "$apk_sign_output" | extract_sha256)
+          apk_fp=$(printf '%s\n' "$apk_sign_output" | extract_apk_sha256)
           if [ -z "$apk_fp" ]; then
             echo "::error::apksigner couldn't verify a signature on the built APK. This almost always means the KEYSTORE_*/KEY_* secrets weren't picked up by Gradle — check they're set exactly as documented in the README, then re-run."
             echo "---- apksigner verify output ----"
