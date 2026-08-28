@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,6 +76,35 @@ jobs:
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/oasis.apk
+
+      - name: Verify the release APK is signed with the expected key
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          APK="app/build/outputs/apk/release/oasis.apk"
+          KEYSTORE="$RUNNER_TEMP/keystore/oasis-release.jks"
+
+          # The in-app updater's entire "upgrade in place" design depends on
+          # every release sharing one signing key — a build that silently came
+          # out unsigned or signed with the wrong key would still assemble
+          # fine, but would break updates (or the install itself) for anyone
+          # who already has an earlier build installed. Catch that here,
+          # before publishing, rather than after a user reports it.
+          apk_fp=$(keytool -printcert -jarfile "$APK" 2>/dev/null | awk -F'SHA256: ' '/SHA256:/{print $2; exit}')
+          if [ -z "$apk_fp" ]; then
+            echo "::error::The built APK isn't signed at all. This almost always means the KEYSTORE_*/KEY_* secrets weren't picked up by Gradle — check they're set exactly as documented in the README, then re-run."
+            exit 1
+          fi
+
+          keystore_fp=$(keytool -list -v -keystore "$KEYSTORE" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null | awk -F'SHA256: ' '/SHA256:/{print $2; exit}')
+
+          if [ "$apk_fp" != "$keystore_fp" ]; then
+            echo "::error::The release APK's signing certificate doesn't match the configured keystore (APK=$apk_fp, keystore=$keystore_fp). Refusing to publish it, since it would break in-place updates for anyone with an earlier build installed."
+            exit 1
+          fi
+
+          echo "Release APK is signed with the expected key ($apk_fp)."
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
