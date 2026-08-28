@@ -148,17 +148,17 @@ fun MainMenuScreen(
 
         item(span = { GridItemSpan(2) }) {
             Text(
-                text = "ACTIVITY",
+                text = "RANKINGS",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
         item(span = { GridItemSpan(2) }) {
             MenuTile(
-                label = "DIARY",
-                sublabel = "Every session, most recent first",
-                onClick = { handleTileClick("diary", onOpenDiary) },
-                borderColor = tileBorderColor("diary")
+                label = "TOP 250",
+                sublabel = "Your custom ranking",
+                onClick = { handleTileClick("top_ranking", onOpenTopRanking) },
+                borderColor = tileBorderColor("top_ranking")
             )
         }
 
@@ -180,17 +180,17 @@ fun MainMenuScreen(
 
         item(span = { GridItemSpan(2) }) {
             Text(
-                text = "RANKINGS",
+                text = "ACTIVITY",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
         item(span = { GridItemSpan(2) }) {
             MenuTile(
-                label = "TOP 250",
-                sublabel = "Your custom ranking",
-                onClick = { handleTileClick("top_ranking", onOpenTopRanking) },
-                borderColor = tileBorderColor("top_ranking")
+                label = "DIARY",
+                sublabel = "Every session, most recent first",
+                onClick = { handleTileClick("diary", onOpenDiary) },
+                borderColor = tileBorderColor("diary")
             )
         }
 
