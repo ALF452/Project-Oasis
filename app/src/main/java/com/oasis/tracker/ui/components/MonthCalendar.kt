@@ -65,8 +65,11 @@ fun MonthCalendar(
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
             DayOfWeek.values().forEach { day ->
+                // SHORT ("Mon", "Tue"…) rather than NARROW ("M", "T"…) — the
+                // single-letter form repeats T for Tue/Thu and S for Sat/Sun,
+                // which reads as misaligned columns even when it isn't.
                 Text(
-                    text = day.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
