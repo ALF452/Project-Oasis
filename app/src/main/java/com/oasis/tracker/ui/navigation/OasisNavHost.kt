@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.oasis.tracker.ui.backlog.BacklogScreen
 import com.oasis.tracker.ui.diary.DiaryFeedScreen
+import com.oasis.tracker.ui.favorites.FavoritesPickerScreen
 import com.oasis.tracker.ui.gamedetail.GameDetailScreen
 import com.oasis.tracker.ui.mainmenu.MainMenuScreen
 import com.oasis.tracker.ui.platform.PlatformDetailScreen
@@ -40,8 +41,13 @@ fun OasisRoot() {
                 onOpenSteam = { navController.navigate(OasisDestinations.STEAM) },
                 onOpenTopRanking = { navController.navigate(OasisDestinations.TOP_RANKING) },
                 onOpenDiary = { navController.navigate(OasisDestinations.DIARY) },
-                onOpenBacklog = { navController.navigate(OasisDestinations.BACKLOG) }
+                onOpenBacklog = { navController.navigate(OasisDestinations.BACKLOG) },
+                onOpenFavoritesPicker = { navController.navigate(OasisDestinations.FAVORITES_ADD) },
+                onOpenGame = { gameId -> navController.navigate(OasisDestinations.gameDetail(gameId)) }
             )
+        }
+        composable(OasisDestinations.FAVORITES_ADD) {
+            FavoritesPickerScreen(onBack = { navController.popBackStack() })
         }
         composable(OasisDestinations.DIARY) {
             DiaryFeedScreen(

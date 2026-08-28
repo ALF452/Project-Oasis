@@ -15,6 +15,7 @@ object OasisDestinations {
     const val DIARY = "diary"
     const val BACKLOG = "backlog"
     const val BACKLOG_ADD = "backlog/add"
+    const val FAVORITES_ADD = "favorites/add"
 
     const val ARG_PLATFORM_ID = "platformId"
     const val ARG_GAME_ID = "gameId"
