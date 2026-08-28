@@ -48,6 +48,7 @@ import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.TextSecondary
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,13 +65,23 @@ fun GameSearchScreen(
     var loading by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
     var searchFailed by remember { mutableStateOf(false) }
+    // Guards against a fast double-tap on a result adding the same game twice:
+    // the add is a suspend DB write, and onGameAdded() only navigates away once
+    // it completes, leaving the row clickable for that whole window otherwise.
+    var adding by remember { mutableStateOf(false) }
+    // Cancelled and replaced on every new search: without this, firing a second
+    // search before the first responds (e.g. editing the query and hitting search
+    // again quickly) could let the older, slower request land after the newer one
+    // and overwrite its results with stale data.
+    var searchJob by remember { mutableStateOf<Job?>(null) }
 
     fun runSearch() {
         if (query.isBlank()) return
         loading = true
         searched = true
         searchFailed = false
-        scope.launch {
+        searchJob?.cancel()
+        searchJob = scope.launch {
             when (val outcome = app.searchRepository.search(query.trim())) {
                 is SearchOutcome.Success -> results = outcome.results
                 is SearchOutcome.BothSourcesFailed -> {
@@ -140,7 +151,9 @@ fun GameSearchScreen(
                 items(results) { result: GameSearchResult ->
                     SearchResultRow(
                         result = result,
+                        enabled = !adding,
                         onClick = {
+                            adding = true
                             scope.launch {
                                 app.gameRepository.addGame(
                                     platformId = platformId,
@@ -160,8 +173,8 @@ fun GameSearchScreen(
 }
 
 @Composable
-private fun SearchResultRow(result: GameSearchResult, onClick: () -> Unit) {
-    NeonPanel(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+private fun SearchResultRow(result: GameSearchResult, enabled: Boolean, onClick: () -> Unit) {
+    NeonPanel(modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,

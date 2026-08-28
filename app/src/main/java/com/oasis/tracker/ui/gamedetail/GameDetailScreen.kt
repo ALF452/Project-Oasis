@@ -141,22 +141,24 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             initialRating = existing?.rating,
             initialNotes = existing?.notes,
             onDismiss = { dialogDate = null },
+            // Dismiss synchronously rather than after the suspend call finishes: while
+            // that DB write is in flight the dialog (and its SAVE button) stayed on
+            // screen and clickable, so a fast double-tap fired onSave twice and, for
+            // a brand-new entry, inserted the session twice.
             onSave = { hours, rating, notes ->
+                dialogDate = null
                 scope.launch {
                     if (existing != null) {
                         app.gameRepository.updateEntry(existing.copy(hours = hours, rating = rating, notes = notes))
                     } else {
                         app.gameRepository.logSession(gameId, date, hours, rating = rating, notes = notes)
                     }
-                    dialogDate = null
                 }
             },
             onDelete = existing?.let {
                 {
-                    scope.launch {
-                        app.gameRepository.deleteEntry(it)
-                        dialogDate = null
-                    }
+                    dialogDate = null
+                    scope.launch { app.gameRepository.deleteEntry(it) }
                 }
             }
         )
