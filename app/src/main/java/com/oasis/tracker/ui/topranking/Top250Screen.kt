@@ -58,7 +58,13 @@ fun Top250Screen(
         rankingIds = store.loadRanking(games.map { it.id }.toSet())
     }
 
-    var scrollEnabled by remember { mutableStateOf(true) }
+    // Ref-counted rather than a plain flag: a single press-then-drag can ask
+    // to block scroll twice in a row (the press's bounded window, then the
+    // drag's own lifecycle), and both requests must clear before scroll
+    // resumes — a plain boolean can have the first request's release
+    // re-enable scroll while the second (the actual drag) is still active.
+    var scrollBlockCount by remember { mutableStateOf(0) }
+    val scrollEnabled = scrollBlockCount == 0
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -109,7 +115,7 @@ fun Top250Screen(
                         store.saveRanking(rankingIds)
                     },
                     onItemClick = { game -> onOpenGame(game.id) },
-                    onPressActiveChanged = { pressed -> scrollEnabled = !pressed },
+                    onPressActiveChanged = { active -> scrollBlockCount += if (active) 1 else -1 },
                     modifier = Modifier.fillMaxWidth()
                 ) { game, index ->
                     TopRankRow(

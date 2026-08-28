@@ -20,7 +20,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
+
+/** Matches Compose's default long-press threshold; used to bound how long a
+ *  tile press can ask the parent scroll container to stand down (see below). */
+private const val LONG_PRESS_TIMEOUT_MS = 500L
 
 /**
  * A small, non-lazy grid (meant for dozens of items, not thousands) that
@@ -74,15 +79,20 @@ fun <T> ReorderableTileGrid(
                                 .pointerInput(id) {
                                     detectTapGestures(
                                         onPress = {
-                                            // Tell the parent scroll container to stand down for the
-                                            // duration of this press so it can't win the initial
-                                            // pointer-move race against the long-press-drag detector
-                                            // below (a scrollable parent otherwise consumes small
-                                            // moves immediately, canceling the long press before it
-                                            // ever fires).
+                                            // Tell the parent scroll container to stand down just long
+                                            // enough to win the initial pointer-move race against the
+                                            // long-press-drag detector below (a scrollable parent
+                                            // otherwise consumes small moves immediately, canceling the
+                                            // long press before it ever fires). Bounded to the long-press
+                                            // window rather than the whole press: blocking scroll for the
+                                            // full press-to-release duration made any scroll gesture that
+                                            // happened to start on a tile feel broken, since tiles cover
+                                            // most of the screen. If a drag actually starts, the drag
+                                            // detector below takes over holding scroll off for its own
+                                            // duration via the same ref-counted callback.
                                             onPressActiveChanged(true)
                                             try {
-                                                tryAwaitRelease()
+                                                withTimeoutOrNull(LONG_PRESS_TIMEOUT_MS) { tryAwaitRelease() }
                                             } finally {
                                                 onPressActiveChanged(false)
                                             }
@@ -93,6 +103,7 @@ fun <T> ReorderableTileGrid(
                                 .pointerInput(id) {
                                     detectDragGesturesAfterLongPress(
                                         onDragStart = { localStart ->
+                                            onPressActiveChanged(true)
                                             draggingId = id
                                             val myCoords = itemCoordinates[id]
                                             pointerPositionInWindow = myCoords?.localToWindow(localStart) ?: Offset.Zero
@@ -120,11 +131,13 @@ fun <T> ReorderableTileGrid(
                                             }
                                         },
                                         onDragEnd = {
+                                            onPressActiveChanged(false)
                                             draggingId = null
                                             dragVisualOffset = Offset.Zero
                                             onOrderChanged(order)
                                         },
                                         onDragCancel = {
+                                            onPressActiveChanged(false)
                                             draggingId = null
                                             dragVisualOffset = Offset.Zero
                                         }

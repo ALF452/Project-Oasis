@@ -69,10 +69,13 @@ fun MainMenuScreen(
         orderStore.loadOrder(PlatformOrderStore.KEY_RETRO, Platforms.RETRO_PLATFORMS.map { it.id })
             .map { Platforms.byId(it) }
     }
-    // Disabled while a tile in either reorderable grid is pressed, so the
-    // outer grid's own scroll gesture can't steal the pointer from the
-    // long-press-drag detector before it has a chance to fire.
-    var scrollEnabled by remember { mutableStateOf(true) }
+    // Disabled while a tile in either reorderable grid is asking for the
+    // outer grid's scroll to stand down (see ReorderableTileGrid). Ref-counted
+    // rather than a plain flag since a single press-then-drag can issue two
+    // overlapping requests (the initial press's bounded window, then the
+    // drag's own lifecycle) that must both clear before scroll resumes.
+    var scrollBlockCount by remember { mutableStateOf(0) }
+    val scrollEnabled = scrollBlockCount == 0
 
     var crashReport by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
@@ -203,7 +206,7 @@ fun MainMenuScreen(
                     orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
                 },
                 onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
-                onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
+                onPressActiveChanged = { active -> scrollBlockCount += if (active) 1 else -1 }
             ) { platform, _ ->
                 MenuTile(
                     label = platform.glyph,
@@ -228,7 +231,7 @@ fun MainMenuScreen(
                     orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
                 },
                 onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
-                onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
+                onPressActiveChanged = { active -> scrollBlockCount += if (active) 1 else -1 }
             ) { platform, _ ->
                 MenuTile(
                     label = platform.glyph,
