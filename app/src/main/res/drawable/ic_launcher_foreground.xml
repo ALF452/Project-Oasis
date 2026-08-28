@@ -1,53 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- outer glow -->
+    <!-- Subtle crosshair: mostly hidden behind the ring body below, so it
+         only shows through the O's hollow center and as short stubs just
+         past its outer edge, instead of reading as a separate reticle. -->
     <path
-        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
-        android:strokeColor="#3300E5FF"
-        android:strokeWidth="18"
+        android:pathData="M54,14 V94"
+        android:strokeColor="#4000E5FF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M14,54 H94"
+        android:strokeColor="#4000E5FF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Soft ambient bloom behind the ring -->
+    <path
+        android:pathData="M20.5,54 A33.5,33.5 0 1 1 87.5,54 A33.5,33.5 0 1 1 20.5,54"
+        android:strokeColor="#2600E5FF"
+        android:strokeWidth="20"
         android:strokeLineCap="round"
         android:fillColor="#00000000" />
 
-    <!-- mid glow -->
+    <!-- The O itself: a single ring with a smooth radial blend from a
+         bright cyan inner rim to a deep teal outer rim, rather than
+         stacked hard-edged strokes, so the color reads as one continuous
+         surface instead of concentric bands. -->
     <path
-        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
-        android:strokeColor="#6600E5FF"
-        android:strokeWidth="11"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000" />
+        android:fillType="evenOdd"
+        android:pathData="M20.5,54 A33.5,33.5 0 1 1 87.5,54 A33.5,33.5 0 1 1 20.5,54 M35.5,54 A18.5,18.5 0 1 1 72.5,54 A18.5,18.5 0 1 1 35.5,54">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="34"
+                android:startColor="#EFFDFF"
+                android:centerColor="#7FE9FF"
+                android:endColor="#0E4A57" />
+        </aapt:attr>
+    </path>
 
-    <!-- core ring, gap at bottom like a HUD scanner -->
+    <!-- A single soft drip trailing from the O's base, blended rather than
+         forked, as a small unique flourish -->
     <path
-        android:pathData="M46.24,82.98 A30,30 0 1 1 61.76,82.98"
-        android:strokeColor="#CFFBFF"
-        android:strokeWidth="5.5"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000" />
+        android:pathData="M54,80 L54,98"
+        android:strokeColor="#4000E5FF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,82 L54,93"
+        android:strokeColor="#B3E5FF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
 
-    <!-- center HUD dot -->
+    <!-- Center HUD dot, softened with a blended glow instead of a flat disc -->
     <path
-        android:pathData="M54,54 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0"
+        android:pathData="M54,54 m-7,0 a7,7 0 1 0 14,0 a7,7 0 1 0 -14,0"
+        android:fillColor="#2E00E5FF" />
+    <path
+        android:pathData="M54,54 m-2.5,0 a2.5,2.5 0 1 0 5,0 a2.5,2.5 0 1 0 -5,0"
         android:fillColor="#00E5FF" />
-
-    <!-- tick marks: top, left, right -->
-    <path
-        android:pathData="M54,16 v8"
-        android:strokeColor="#00E5FF"
-        android:strokeWidth="3"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M16,54 h8"
-        android:strokeColor="#00E5FF"
-        android:strokeWidth="3"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M84,54 h8"
-        android:strokeColor="#00E5FF"
-        android:strokeWidth="3"
-        android:strokeLineCap="round" />
 </vector>
