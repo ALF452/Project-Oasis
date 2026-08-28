@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import com.oasis.tracker.data.GameEntity
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.data.TopRankingStore
+import com.oasis.tracker.ui.components.ConfirmDialog
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.components.ReorderableTileGrid
 import com.oasis.tracker.ui.rememberOasisApp
@@ -53,6 +54,7 @@ fun Top250Screen(
     val allGames by app.gameRepository.allGames().collectAsState(initial = null)
 
     var rankingIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var gamePendingRemoval by remember { mutableStateOf<GameEntity?>(null) }
     LaunchedEffect(allGames) {
         val games = allGames ?: return@LaunchedEffect
         rankingIds = store.loadRanking(games.map { it.id }.toSet())
@@ -121,14 +123,25 @@ fun Top250Screen(
                     TopRankRow(
                         rank = index + 1,
                         game = game,
-                        onRemove = {
-                            rankingIds = rankingIds - game.id
-                            store.removeGame(game.id)
-                        }
+                        onRemove = { gamePendingRemoval = game }
                     )
                 }
             }
         }
+    }
+
+    gamePendingRemoval?.let { game ->
+        ConfirmDialog(
+            title = "Remove from Top 250?",
+            message = "\"${game.title}\" will be taken off your ranking. The game itself stays in your library.",
+            confirmLabel = "REMOVE",
+            onConfirm = {
+                rankingIds = rankingIds - game.id
+                store.removeGame(game.id)
+                gamePendingRemoval = null
+            },
+            onDismiss = { gamePendingRemoval = null }
+        )
     }
 }
 
