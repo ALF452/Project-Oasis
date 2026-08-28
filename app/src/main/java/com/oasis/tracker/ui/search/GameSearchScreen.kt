@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.network.GameSearchResult
+import com.oasis.tracker.network.SearchOutcome
 import com.oasis.tracker.network.SearchSource
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.rememberOasisApp
@@ -61,13 +63,21 @@ fun GameSearchScreen(
     var results by remember { mutableStateOf<List<GameSearchResult>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
+    var searchFailed by remember { mutableStateOf(false) }
 
     fun runSearch() {
         if (query.isBlank()) return
         loading = true
         searched = true
+        searchFailed = false
         scope.launch {
-            results = app.searchRepository.search(query.trim())
+            when (val outcome = app.searchRepository.search(query.trim())) {
+                is SearchOutcome.Success -> results = outcome.results
+                is SearchOutcome.BothSourcesFailed -> {
+                    results = emptyList()
+                    searchFailed = true
+                }
+            }
             loading = false
         }
     }
@@ -104,6 +114,19 @@ fun GameSearchScreen(
         when {
             loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = NeonBlue)
+            }
+
+            searchFailed -> Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "Couldn't reach Wikipedia or archive.org. Check your connection and try again.",
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                TextButton(onClick = { runSearch() }) { Text("RETRY") }
             }
 
             searched && results.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

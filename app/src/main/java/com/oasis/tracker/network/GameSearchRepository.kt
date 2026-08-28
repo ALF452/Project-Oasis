@@ -3,18 +3,32 @@ package com.oasis.tracker.network
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
+/** Outcome of a [GameSearchRepository.search] call, distinguishing a genuine
+ *  zero-result search from both sources being unreachable (no connectivity,
+ *  Wikipedia/archive.org down) — the two look identical as a plain empty list. */
+sealed interface SearchOutcome {
+    data class Success(val results: List<GameSearchResult>) : SearchOutcome
+    data object BothSourcesFailed : SearchOutcome
+}
+
 class GameSearchRepository(
     private val wikipediaApi: WikipediaApi = NetworkModule.wikipediaApi,
     private val archiveOrgApi: ArchiveOrgApi = NetworkModule.archiveOrgApi
 ) {
 
     /** Searches Wikipedia and archive.org concurrently, keeping either source's failure from sinking the other. */
-    suspend fun search(query: String): List<GameSearchResult> {
-        if (query.isBlank()) return emptyList()
+    suspend fun search(query: String): SearchOutcome {
+        if (query.isBlank()) return SearchOutcome.Success(emptyList())
         return coroutineScope {
-            val wiki = async { runCatching { searchWikipedia(query) }.getOrDefault(emptyList()) }
-            val archive = async { runCatching { searchArchiveOrg(query) }.getOrDefault(emptyList()) }
-            wiki.await() + archive.await()
+            val wiki = async { runCatching { searchWikipedia(query) } }
+            val archive = async { runCatching { searchArchiveOrg(query) } }
+            val wikiResult = wiki.await()
+            val archiveResult = archive.await()
+            if (wikiResult.isFailure && archiveResult.isFailure) {
+                SearchOutcome.BothSourcesFailed
+            } else {
+                SearchOutcome.Success(wikiResult.getOrDefault(emptyList()) + archiveResult.getOrDefault(emptyList()))
+            }
         }
     }
 
