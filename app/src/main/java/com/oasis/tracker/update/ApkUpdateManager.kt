@@ -42,6 +42,11 @@ class ApkUpdateManager(private val appContext: Context) {
     private var receiver: BroadcastReceiver? = null
     private var lastCheckedAtElapsedMs: Long = 0L
 
+    /** Whether the UI has already auto-launched the install prompt for the current
+     *  ready-to-install download, so returning to the main menu (or any other
+     *  recomposition) doesn't keep popping the system install dialog again. */
+    private var autoInstallPromptShown = false
+
     /** versionCode the on-disk [apkFile] was downloaded for, so a leftover file from an
      *  update that's already been installed isn't mistaken for one still pending. */
     private var pendingApkVersionCode: Int
@@ -76,10 +81,16 @@ class ApkUpdateManager(private val appContext: Context) {
     fun startDownload(info: UpdateInfo) {
         apkFile().delete()
         pendingApkVersionCode = info.versionCode
+        autoInstallPromptShown = false
         val downloadManager = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
             .setTitle("Oasis update ${info.versionName}")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // VISIBLE rather than VISIBLE_NOTIFY_COMPLETED: the app itself now opens the
+            // installer automatically the moment the download finishes (see
+            // consumeAutoInstallPrompt), so a separate "download complete, tap to open"
+            // system notification would just be a second, redundant, easy-to-tap-instead
+            // path into the exact same install flow.
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
             .setDestinationInExternalFilesDir(appContext, "updates", APK_FILE_NAME)
             .setAllowedOverMetered(true)
             .setMimeType("application/vnd.android.package-archive")
@@ -134,6 +145,15 @@ class ApkUpdateManager(private val appContext: Context) {
     private fun unregisterCompletionReceiver() {
         receiver?.let { runCatching { appContext.unregisterReceiver(it) } }
         receiver = null
+    }
+
+    /** Returns true the first time this is called for the current ready-to-install
+     *  download, false on every call after — lets the UI auto-launch the system
+     *  install prompt exactly once instead of every time it recomposes. */
+    fun consumeAutoInstallPrompt(): Boolean {
+        if (autoInstallPromptShown) return false
+        autoInstallPromptShown = true
+        return true
     }
 
     fun apkFile(): File = File(appContext.getExternalFilesDir("updates"), APK_FILE_NAME)

@@ -91,6 +91,19 @@ fun MainMenuScreen(
         crashReport = app.crashLogStore.read()
     }
 
+    // The moment a download finishes, launch the system install prompt ourselves
+    // instead of waiting for the user to notice and tap the banner's own INSTALL
+    // button — that was the extra manual step between "download done" and actually
+    // seeing the OS's install confirmation. consumeAutoInstallPrompt() guards this
+    // to fire once per download, so returning to this screen later (e.g. after
+    // cancelling the OS prompt) shows the banner without popping it again.
+    LaunchedEffect(updateState) {
+        val ready = updateState as? UpdateState.ReadyToInstall ?: return@LaunchedEffect
+        if (app.updateManager.canInstallPackages() && app.updateManager.consumeAutoInstallPrompt()) {
+            runCatching { context.startActivity(app.updateManager.installApkIntent(ready.apkFile)) }
+        }
+    }
+
     val favoritesStore = remember { FavoritesStore(context) }
     val allGames by app.gameRepository.allGames().collectAsState(initial = null)
     var favoriteIds by remember { mutableStateOf<List<Long>>(emptyList()) }
