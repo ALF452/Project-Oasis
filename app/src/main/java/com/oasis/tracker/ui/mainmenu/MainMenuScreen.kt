@@ -1,6 +1,7 @@
 package com.oasis.tracker.ui.mainmenu
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -74,7 +75,7 @@ fun MainMenuScreen(
 
     // Tapping a console tile bleeds its glow from blue to purple before the
     // actual navigation happens, rather than cutting away instantly.
-    val tileGlowColor = remember { Animatable(NeonBlue) }
+    val tileGlowColor = remember { Animatable(NeonBlue, Color.VectorConverter) }
     var transitioningPlatformId by remember { mutableStateOf<String?>(null) }
     fun handlePlatformClick(platformId: String) {
         if (transitioningPlatformId != null) return
