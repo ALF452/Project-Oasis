@@ -4,6 +4,8 @@ import android.app.Application
 import com.oasis.tracker.data.GameRepository
 import com.oasis.tracker.data.OasisDatabase
 import com.oasis.tracker.data.SteamAuthStore
+import com.oasis.tracker.diagnostics.CrashHandler
+import com.oasis.tracker.diagnostics.CrashLogStore
 import com.oasis.tracker.network.GameSearchRepository
 import com.oasis.tracker.network.steam.SteamRepository
 import com.oasis.tracker.update.ApkUpdateManager
@@ -19,9 +21,13 @@ class OasisApp : Application() {
         private set
     lateinit var steamRepository: SteamRepository
         private set
+    lateinit var crashLogStore: CrashLogStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
+        crashLogStore = CrashLogStore(this)
+        CrashHandler.install(crashLogStore)
         gameRepository = GameRepository(OasisDatabase.getInstance(this))
         searchRepository = GameSearchRepository()
         updateManager = ApkUpdateManager(this)

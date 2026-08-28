@@ -38,6 +38,7 @@ import com.oasis.tracker.data.PlatformOrderStore
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.components.ReorderableTileGrid
+import com.oasis.tracker.ui.diagnostics.CrashReportDialog
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.NeonPurple
@@ -72,6 +73,11 @@ fun MainMenuScreen(
     // outer grid's own scroll gesture can't steal the pointer from the
     // long-press-drag detector before it has a chance to fire.
     var scrollEnabled by remember { mutableStateOf(true) }
+
+    var crashReport by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        crashReport = app.crashLogStore.read()
+    }
 
     // Tapping a console tile bleeds its glow from blue to purple before the
     // actual navigation happens, rather than cutting away instantly.
@@ -235,6 +241,16 @@ fun MainMenuScreen(
                 )
             }
         }
+    }
+
+    crashReport?.let { report ->
+        CrashReportDialog(
+            report = report,
+            onDismiss = {
+                app.crashLogStore.clear()
+                crashReport = null
+            }
+        )
     }
 }
 
