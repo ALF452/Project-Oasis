@@ -52,6 +52,7 @@ import com.oasis.tracker.network.SearchSource
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
+import com.oasis.tracker.ui.theme.DangerMagenta
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.TextSecondary
 import kotlinx.coroutines.Job
@@ -288,6 +289,10 @@ private fun SearchResultRow(result: GameSearchResult, enabled: Boolean, onClick:
                     text = if (result.source == SearchSource.WIKIPEDIA) "WIKIPEDIA" else "ARCHIVE.ORG",
                     style = MaterialTheme.typography.labelLarge
                 )
+                // TEMPORARY diagnostic output — see GameSearchResult.debugInfo.
+                result.debugInfo?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = DangerMagenta, maxLines = 6)
+                }
             }
         }
     }
