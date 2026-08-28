@@ -18,8 +18,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +46,8 @@ fun MainMenuScreen(
     onOpenMonthlyTracker: () -> Unit,
     onOpenYearlyTracker: () -> Unit,
     onOpenPlatform: (String) -> Unit,
-    onOpenSteam: () -> Unit
+    onOpenSteam: () -> Unit,
+    onOpenTopRanking: () -> Unit
 ) {
     val app = rememberOasisApp()
     val context = LocalContext.current
@@ -60,6 +63,10 @@ fun MainMenuScreen(
         orderStore.loadOrder(PlatformOrderStore.KEY_RETRO, Platforms.RETRO_PLATFORMS.map { it.id })
             .map { Platforms.byId(it) }
     }
+    // Disabled while a tile in either reorderable grid is pressed, so the
+    // outer grid's own scroll gesture can't steal the pointer from the
+    // long-press-drag detector before it has a chance to fire.
+    var scrollEnabled by remember { mutableStateOf(true) }
 
     // Re-check on cold start, and again any time the user returns to this
     // screen (e.g. after backing out of an update install that didn't finish).
@@ -82,6 +89,7 @@ fun MainMenuScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
+        userScrollEnabled = scrollEnabled,
         modifier = Modifier.fillMaxSize()
     ) {
         item(span = { GridItemSpan(2) }) {
@@ -122,6 +130,17 @@ fun MainMenuScreen(
 
         item(span = { GridItemSpan(2) }) {
             Text(
+                text = "RANKINGS",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(2) }) {
+            MenuTile(label = "TOP 250", sublabel = "Your custom ranking", onClick = onOpenTopRanking)
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
                 text = "PLATFORMS",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp)
@@ -134,8 +153,9 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> onOpenPlatform(platform.id) }
-            ) { platform ->
+                onItemClick = { platform -> onOpenPlatform(platform.id) },
+                onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
+            ) { platform, _ ->
                 MenuTile(label = platform.glyph, sublabel = platform.displayName)
             }
         }
@@ -154,8 +174,9 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> onOpenPlatform(platform.id) }
-            ) { platform ->
+                onItemClick = { platform -> onOpenPlatform(platform.id) },
+                onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
+            ) { platform, _ ->
                 MenuTile(label = platform.glyph, sublabel = platform.displayName)
             }
         }

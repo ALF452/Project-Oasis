@@ -39,7 +39,8 @@ fun <T> ReorderableTileGrid(
     horizontalSpacing: Dp = 14.dp,
     verticalSpacing: Dp = 14.dp,
     tileHeight: Dp = 96.dp,
-    content: @Composable (T) -> Unit
+    onPressActiveChanged: (Boolean) -> Unit = {},
+    content: @Composable (T, Int) -> Unit
 ) {
     var order by remember(items.map(itemId)) { mutableStateOf(items) }
     val itemCoordinates = remember { mutableStateMapOf<String, LayoutCoordinates>() }
@@ -48,9 +49,10 @@ fun <T> ReorderableTileGrid(
     var dragVisualOffset by remember { mutableStateOf(Offset.Zero) }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(verticalSpacing)) {
-        order.chunked(columns).forEach { rowItems ->
+        order.chunked(columns).forEachIndexed { rowIndex, rowItems ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(horizontalSpacing)) {
-                rowItems.forEach { item ->
+                rowItems.forEachIndexed { columnIndex, item ->
+                    val index = rowIndex * columns + columnIndex
                     val id = itemId(item)
                     key(id) {
                         val isDragging = draggingId == id
@@ -70,7 +72,23 @@ fun <T> ReorderableTileGrid(
                                     }
                                 )
                                 .pointerInput(id) {
-                                    detectTapGestures(onTap = { onItemClick(item) })
+                                    detectTapGestures(
+                                        onPress = {
+                                            // Tell the parent scroll container to stand down for the
+                                            // duration of this press so it can't win the initial
+                                            // pointer-move race against the long-press-drag detector
+                                            // below (a scrollable parent otherwise consumes small
+                                            // moves immediately, canceling the long press before it
+                                            // ever fires).
+                                            onPressActiveChanged(true)
+                                            try {
+                                                tryAwaitRelease()
+                                            } finally {
+                                                onPressActiveChanged(false)
+                                            }
+                                        },
+                                        onTap = { onItemClick(item) }
+                                    )
                                 }
                                 .pointerInput(id) {
                                     detectDragGesturesAfterLongPress(
@@ -113,7 +131,7 @@ fun <T> ReorderableTileGrid(
                                     )
                                 }
                         ) {
-                            content(item)
+                            content(item, index)
                         }
                     }
                 }
