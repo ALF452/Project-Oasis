@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,8 +112,12 @@ fun MainMenuScreen(
     var favoriteIds by remember { mutableStateOf<List<Long>>(emptyList()) }
     // null until favorites have loaded for real once — guards the initial load
     // (nothing loaded yet -> whatever was already pinned) from reading as a
-    // brand-new "favorites full" milestone.
-    var previousFavoriteCount by remember { mutableStateOf<Int?>(null) }
+    // brand-new "favorites full" milestone. rememberSaveable, not remember:
+    // adding a favorite always means navigating to GameSearchScreen and back,
+    // which tears down and recreates this screen's plain remember state —
+    // rememberSaveable survives that round trip since the NavBackStackEntry
+    // (and its SavedStateRegistry) isn't destroyed, just briefly not current.
+    var previousFavoriteCount by rememberSaveable { mutableStateOf<Int?>(null) }
     var milestone by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(allGames) {
         val games = allGames ?: return@LaunchedEffect
@@ -190,8 +195,14 @@ fun MainMenuScreen(
             }
         }
 
-        item(span = { GridItemSpan(2) }) {
-            MilestoneBanner(message = milestone, onDismiss = { milestone = null })
+        // Only emitted while there's actually something to show: the grid's
+        // spacedBy inserts a fixed gap around every item regardless of its
+        // measured height, so an always-present-but-collapsed banner item
+        // would leave a permanent dead gap between the header and Top 5.
+        if (milestone != null) {
+            item(span = { GridItemSpan(2) }) {
+                MilestoneBanner(message = milestone, onDismiss = { milestone = null })
+            }
         }
 
         item(span = { GridItemSpan(2) }) {

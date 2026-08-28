@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,8 +67,13 @@ fun Top250Screen(
     var gamePendingRemoval by remember { mutableStateOf<GameEntity?>(null) }
     // null until the ranking has loaded for real once — guards the very first load
     // (going from "nothing loaded yet" to whatever was already ranked) from being
-    // mistaken for a burst of brand-new milestones.
-    var previousRankedCount by remember { mutableStateOf<Int?>(null) }
+    // mistaken for a burst of brand-new milestones. rememberSaveable, not remember:
+    // adding a game always means navigating to GameSearchScreen and back, which
+    // tears down and recreates this screen's plain remember state — rememberSaveable
+    // survives that round trip since the NavBackStackEntry (and its
+    // SavedStateRegistry) isn't destroyed, just briefly not current. Without this,
+    // the milestone could never actually fire on the one path that grows the count.
+    var previousRankedCount by rememberSaveable { mutableStateOf<Int?>(null) }
     var milestone by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(allGames) {
         val games = allGames ?: return@LaunchedEffect
