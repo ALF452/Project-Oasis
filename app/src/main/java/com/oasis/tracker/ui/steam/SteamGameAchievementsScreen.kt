@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +40,7 @@ import com.oasis.tracker.network.steam.SteamAchievement
 import com.oasis.tracker.network.steam.SteamConnectionState
 import com.oasis.tracker.network.steam.SteamGameAchievements
 import com.oasis.tracker.ui.components.NeonPanel
+import com.oasis.tracker.ui.components.ShimmerResultList
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -81,9 +81,7 @@ fun SteamGameAchievementsScreen(appId: Int, onBack: () -> Unit) {
 
         val current = result
         when {
-            current == null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NeonBlue)
-            }
+            current == null -> ShimmerResultList(modifier = Modifier.fillMaxSize())
             current.unavailableReason != null -> Box(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 contentAlignment = Alignment.Center

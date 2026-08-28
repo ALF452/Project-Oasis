@@ -59,4 +59,10 @@ interface LogEntryDao {
         """
     )
     fun observeAllEntriesWithGame(): Flow<List<LogEntryWithGame>>
+
+    /** One row per game that has at least one rated session — used to show a rating badge on Top 250. */
+    @Query("SELECT gameId, AVG(rating) AS avgRating FROM log_entries WHERE rating IS NOT NULL GROUP BY gameId")
+    fun observeAverageRatings(): Flow<List<GameAverageRating>>
 }
+
+data class GameAverageRating(val gameId: Long, val avgRating: Float)

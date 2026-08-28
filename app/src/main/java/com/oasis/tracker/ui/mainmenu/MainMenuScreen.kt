@@ -57,6 +57,7 @@ import coil.compose.AsyncImage
 import com.oasis.tracker.data.FavoritesStore
 import com.oasis.tracker.data.GameEntity
 import com.oasis.tracker.data.Platforms
+import com.oasis.tracker.ui.components.MilestoneBanner
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.diagnostics.CrashReportDialog
 import com.oasis.tracker.ui.rememberOasisApp
@@ -108,9 +109,21 @@ fun MainMenuScreen(
     val favoritesStore = remember { FavoritesStore(context) }
     val allGames by app.gameRepository.allGames().collectAsState(initial = null)
     var favoriteIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+    // null until favorites have loaded for real once — guards the initial load
+    // (nothing loaded yet -> whatever was already pinned) from reading as a
+    // brand-new "favorites full" milestone.
+    var previousFavoriteCount by remember { mutableStateOf<Int?>(null) }
+    var milestone by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(allGames) {
         val games = allGames ?: return@LaunchedEffect
-        favoriteIds = favoritesStore.loadFavorites(games.map { it.id }.toSet())
+        val loaded = favoritesStore.loadFavorites(games.map { it.id }.toSet())
+        val previous = previousFavoriteCount
+        if (previous != null && previous < FavoritesStore.MAX_FAVORITES && loaded.size == FavoritesStore.MAX_FAVORITES) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            milestone = "Your Top 5 is complete!"
+        }
+        previousFavoriteCount = loaded.size
+        favoriteIds = loaded
     }
     val favoriteGames = remember(favoriteIds, allGames) {
         val byId = allGames?.associateBy { it.id }.orEmpty()
@@ -175,6 +188,10 @@ fun MainMenuScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            MilestoneBanner(message = milestone, onDismiss = { milestone = null })
         }
 
         item(span = { GridItemSpan(2) }) {

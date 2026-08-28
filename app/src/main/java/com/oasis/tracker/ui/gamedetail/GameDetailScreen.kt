@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +41,7 @@ import coil.compose.AsyncImage
 import com.oasis.tracker.data.LogEntryEntity
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.ui.components.ConfirmDialog
+import com.oasis.tracker.ui.components.MilestoneBanner
 import com.oasis.tracker.ui.components.MonthCalendar
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.rememberOasisApp
@@ -57,7 +60,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
     val haptic = LocalHapticFeedback.current
 
     val game by app.gameRepository.game(gameId).collectAsState(initial = null)
-    val entries by app.gameRepository.entriesForGame(gameId).collectAsState(initial = emptyList())
+    val entries by app.gameRepository.entriesForGame(gameId).collectAsState(initial = null)
 
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var dialogDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -65,8 +68,28 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
     var gamePendingDelete by remember { mutableStateOf(false) }
 
     val entriesByDate = remember(entries) {
-        entries.groupBy { LocalDate.ofEpochDay(it.epochDay) }
+        entries.orEmpty().groupBy { LocalDate.ofEpochDay(it.epochDay) }
             .mapValues { (_, list) -> list.sumOf { it.hours.toDouble() }.toFloat() }
+    }
+
+    // null until this game's sessions have loaded for real once — guards the
+    // initial load (nothing loaded yet -> however many hours already logged)
+    // from reading as one giant burst of milestones.
+    var previousTotalHours by remember(gameId) { mutableStateOf<Float?>(null) }
+    var milestone by remember(gameId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(entries) {
+        val list = entries ?: return@LaunchedEffect
+        val total = list.sumOf { it.hours.toDouble() }.toFloat()
+        val previous = previousTotalHours
+        if (previous != null) {
+            val previousTens = (previous / 10f).toInt()
+            val currentTens = (total / 10f).toInt()
+            if (currentTens > previousTens && currentTens > 0) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                milestone = "${currentTens * 10}+ hours logged!"
+            }
+        }
+        previousTotalHours = total
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -93,6 +116,8 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CharcoalBackground)
         )
+
+        MilestoneBanner(message = milestone, onDismiss = { milestone = null })
 
         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
@@ -134,7 +159,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
                 )
             }
 
-            if (entries.isEmpty()) {
+            if (entries.isNullOrEmpty()) {
                 item {
                     Text(
                         "No sessions logged yet. Tap a day on the calendar to add one.",
@@ -143,7 +168,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
                     )
                 }
             } else {
-                items(entries.sortedByDescending { it.epochDay }, key = { it.id }) { entry: LogEntryEntity ->
+                items(entries.orEmpty().sortedByDescending { it.epochDay }, key = { it.id }) { entry: LogEntryEntity ->
                     DiaryRow(
                         entry = entry,
                         onClick = { dialogDate = LocalDate.ofEpochDay(entry.epochDay) },
@@ -155,7 +180,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
     }
 
     dialogDate?.let { date ->
-        val existing = entries.firstOrNull { LocalDate.ofEpochDay(it.epochDay) == date }
+        val existing = entries.orEmpty().firstOrNull { LocalDate.ofEpochDay(it.epochDay) == date }
         AddEditEntryDialog(
             date = date,
             initialHours = existing?.hours,
@@ -235,9 +260,12 @@ private fun DiaryRow(entry: LogEntryEntity, onClick: () -> Unit, onDelete: () ->
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text("${entry.hours}h played", style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
-                entry.rating?.let {
-                    val ratingText = if (it % 1f == 0f) it.toInt().toString() else it.toString()
-                    Text("Rating: $ratingText / 10", style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
+                entry.rating?.let { rating ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = NeonBlue, modifier = Modifier.size(14.dp))
+                        val ratingText = if (rating % 1f == 0f) rating.toInt().toString() else rating.toString()
+                        Text(" $ratingText/10", style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
+                    }
                 }
                 entry.notes?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             }

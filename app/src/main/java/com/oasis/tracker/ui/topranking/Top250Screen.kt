@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,8 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -36,8 +39,10 @@ import com.oasis.tracker.data.GameEntity
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.data.TopRankingStore
 import com.oasis.tracker.ui.components.ConfirmDialog
+import com.oasis.tracker.ui.components.MilestoneBanner
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.components.ReorderableTileGrid
+import com.oasis.tracker.ui.components.milestoneMessage
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -51,14 +56,33 @@ fun Top250Screen(
 ) {
     val app = rememberOasisApp()
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val store = remember { TopRankingStore(context) }
     val allGames by app.gameRepository.allGames().collectAsState(initial = null)
+    val averageRatings by app.gameRepository.averageRatings().collectAsState(initial = emptyList())
+    val ratingByGameId = remember(averageRatings) { averageRatings.associate { it.gameId to it.avgRating } }
 
     var rankingIds by remember { mutableStateOf<List<Long>>(emptyList()) }
     var gamePendingRemoval by remember { mutableStateOf<GameEntity?>(null) }
+    // null until the ranking has loaded for real once — guards the very first load
+    // (going from "nothing loaded yet" to whatever was already ranked) from being
+    // mistaken for a burst of brand-new milestones.
+    var previousRankedCount by remember { mutableStateOf<Int?>(null) }
+    var milestone by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(allGames) {
         val games = allGames ?: return@LaunchedEffect
-        rankingIds = store.loadRanking(games.map { it.id }.toSet())
+        val loaded = store.loadRanking(games.map { it.id }.toSet())
+        val previous = previousRankedCount
+        if (previous != null) {
+            milestoneMessage(previous, loaded.size, TOP_RANKING_MILESTONES) { crossed ->
+                if (crossed >= TopRankingStore.MAX_RANKED) "Top 250 complete — every slot ranked!" else "$crossed games ranked!"
+            }?.let {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                milestone = it
+            }
+        }
+        previousRankedCount = loaded.size
+        rankingIds = loaded
     }
 
     // Ref-counted rather than a plain flag: a single press-then-drag can ask
@@ -84,6 +108,8 @@ fun Top250Screen(
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CharcoalBackground)
         )
+
+        MilestoneBanner(message = milestone, onDismiss = { milestone = null })
 
         val games = allGames
         val rankedGames = remember(games, rankingIds) {
@@ -124,6 +150,7 @@ fun Top250Screen(
                     TopRankRow(
                         rank = index + 1,
                         game = game,
+                        avgRating = ratingByGameId[game.id],
                         onRemove = { gamePendingRemoval = game }
                     )
                 }
@@ -147,7 +174,7 @@ fun Top250Screen(
 }
 
 @Composable
-private fun TopRankRow(rank: Int, game: GameEntity, onRemove: () -> Unit) {
+private fun TopRankRow(rank: Int, game: GameEntity, avgRating: Float?, onRemove: () -> Unit) {
     NeonPanel(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(10.dp),
@@ -173,11 +200,19 @@ private fun TopRankRow(rank: Int, game: GameEntity, onRemove: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    Platforms.byId(game.platformId).displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        Platforms.byId(game.platformId).displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    avgRating?.let { rating ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Star, contentDescription = null, tint = NeonBlue, modifier = Modifier.size(14.dp))
+                            Text(" %.1f".format(rating), style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
+                        }
+                    }
+                }
             }
             IconButton(onClick = onRemove) {
                 Icon(Icons.Filled.Close, contentDescription = "Remove from ranking", tint = TextSecondary)
@@ -185,3 +220,5 @@ private fun TopRankRow(rank: Int, game: GameEntity, onRemove: () -> Unit) {
         }
     }
 }
+
+private val TOP_RANKING_MILESTONES = listOf(1, 10, 25, 50, 100, 150, 200, TopRankingStore.MAX_RANKED)

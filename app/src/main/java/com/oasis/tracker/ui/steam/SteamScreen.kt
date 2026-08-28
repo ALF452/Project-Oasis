@@ -44,6 +44,7 @@ import com.oasis.tracker.network.steam.SteamConnectionState
 import com.oasis.tracker.network.steam.SteamGameSummary
 import com.oasis.tracker.network.steam.SteamProfile
 import com.oasis.tracker.ui.components.NeonPanel
+import com.oasis.tracker.ui.components.ShimmerResultList
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -215,9 +216,7 @@ private fun ConnectedLibrary(
         }
 
         when {
-            currentGames == null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NeonBlue)
-            }
+            currentGames == null -> ShimmerResultList(modifier = Modifier.fillMaxSize())
             currentGames.isEmpty() -> CenteredMessage("No games found on this Steam library.")
             else -> LazyColumn(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),

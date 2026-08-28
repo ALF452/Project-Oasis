@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +51,7 @@ import com.oasis.tracker.network.GameSearchResult
 import com.oasis.tracker.network.SearchOutcome
 import com.oasis.tracker.network.SearchSource
 import com.oasis.tracker.ui.components.NeonPanel
+import com.oasis.tracker.ui.components.ShimmerResultList
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -154,9 +154,7 @@ fun GameSearchScreen(
         )
 
         when {
-            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = NeonBlue)
-            }
+            loading -> ShimmerResultList(modifier = Modifier.fillMaxSize())
 
             searchFailed -> Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),

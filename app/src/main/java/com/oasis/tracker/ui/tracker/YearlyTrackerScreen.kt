@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +40,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
-fun YearlyTrackerScreen(onBack: () -> Unit) {
+fun YearlyTrackerScreen(onBack: () -> Unit, onOpenWrapUp: (Int) -> Unit) {
     val app = rememberOasisApp()
     var year by remember { mutableIntStateOf(LocalDate.now().year) }
     val entries by app.gameRepository.entriesForYear(year).collectAsState(initial = emptyList())
@@ -59,6 +60,11 @@ fun YearlyTrackerScreen(onBack: () -> Unit) {
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NeonBlue)
+                }
+            },
+            actions = {
+                IconButton(onClick = { onOpenWrapUp(year) }) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = "Year wrap-up", tint = NeonBlue)
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CharcoalBackground)

@@ -76,6 +76,9 @@ class GameRepository(private val db: OasisDatabase) {
     /** Every logged session across all games, most recent first — the global diary feed. */
     fun allEntriesWithGame(): Flow<List<LogEntryWithGame>> = db.logEntryDao().observeAllEntriesWithGame()
 
+    /** Average rating per game, for games with at least one rated session. */
+    fun averageRatings(): Flow<List<GameAverageRating>> = db.logEntryDao().observeAverageRatings()
+
     fun backlog(): Flow<List<BacklogEntity>> = db.backlogDao().observeAll()
 
     suspend fun addToBacklog(title: String, coverUrl: String?, sourceUrl: String?, summary: String?): Long =

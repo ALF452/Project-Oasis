@@ -22,6 +22,7 @@ import com.oasis.tracker.ui.steam.SteamScreen
 import com.oasis.tracker.ui.topranking.Top250Screen
 import com.oasis.tracker.ui.tracker.MonthlyTrackerScreen
 import com.oasis.tracker.ui.tracker.YearlyTrackerScreen
+import com.oasis.tracker.ui.wrapup.YearlyWrapUpScreen
 
 @Composable
 fun OasisRoot() {
@@ -105,7 +106,21 @@ fun OasisRoot() {
             MonthlyTrackerScreen(onBack = { navController.popBackStack() })
         }
         composable(OasisDestinations.YEARLY_TRACKER) {
-            YearlyTrackerScreen(onBack = { navController.popBackStack() })
+            YearlyTrackerScreen(
+                onBack = { navController.popBackStack() },
+                onOpenWrapUp = { year -> navController.navigate(OasisDestinations.wrapUp(year)) }
+            )
+        }
+        composable(
+            route = OasisDestinations.WRAP_UP,
+            arguments = listOf(navArgument(OasisDestinations.ARG_YEAR) { type = NavType.IntType })
+        ) { backStackEntry ->
+            val year = backStackEntry.arguments?.getInt(OasisDestinations.ARG_YEAR) ?: 0
+            YearlyWrapUpScreen(
+                year = year,
+                onBack = { navController.popBackStack() },
+                onOpenGame = { gameId -> navController.navigate(OasisDestinations.gameDetail(gameId)) }
+            )
         }
         composable(
             route = OasisDestinations.PLATFORM_DETAIL,
