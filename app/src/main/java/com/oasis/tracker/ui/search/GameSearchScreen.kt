@@ -82,6 +82,9 @@ fun GameSearchScreen(
     // Set when a result is tapped in AddToFavorites/AddToTopRanking mode: both still
     // need a platform (every tracked game has one), so the actual add waits on this.
     var pendingPlatformPick by remember { mutableStateOf<GameSearchResult?>(null) }
+    // Set once an AddToTopRanking game has a platform and is already inserted into the
+    // library: still needs a rank before it's actually placed in the Top 250.
+    var pendingRank by remember { mutableStateOf<PendingRank?>(null) }
     var results by remember { mutableStateOf<List<GameSearchResult>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
@@ -229,17 +232,36 @@ fun GameSearchScreen(
                         summary = result.subtitle
                     )
                     when (mode) {
-                        GameSearchMode.AddToFavorites -> FavoritesStore(context).addFavorite(gameId)
-                        GameSearchMode.AddToTopRanking -> TopRankingStore(context).addGame(gameId)
-                        else -> Unit
+                        GameSearchMode.AddToFavorites -> {
+                            FavoritesStore(context).addFavorite(gameId)
+                            onGameAdded()
+                        }
+                        GameSearchMode.AddToTopRanking -> {
+                            val nextRank = TopRankingStore(context).count() + 1
+                            pendingRank = PendingRank(gameId = gameId, defaultRank = nextRank, maxRank = nextRank)
+                        }
+                        else -> onGameAdded()
                     }
-                    onGameAdded()
                 }
             },
             onDismiss = { pendingPlatformPick = null }
         )
     }
+
+    pendingRank?.let { pending ->
+        RankInputDialog(
+            defaultRank = pending.defaultRank,
+            maxRank = pending.maxRank,
+            onConfirm = { rank ->
+                TopRankingStore(context).addGame(pending.gameId, atRank = rank)
+                pendingRank = null
+                onGameAdded()
+            }
+        )
+    }
 }
+
+private data class PendingRank(val gameId: Long, val defaultRank: Int, val maxRank: Int)
 
 @Composable
 private fun PlatformPickerDialog(onSelect: (String) -> Unit, onDismiss: () -> Unit) {
@@ -270,6 +292,39 @@ private fun PlatformPickerDialog(onSelect: (String) -> Unit, onDismiss: () -> Un
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
+    )
+}
+
+@Composable
+private fun RankInputDialog(defaultRank: Int, maxRank: Int, onConfirm: (Int) -> Unit) {
+    var text by remember { mutableStateOf(defaultRank.toString()) }
+    fun resolvedRank(): Int = text.toIntOrNull()?.coerceIn(1, maxRank) ?: defaultRank
+
+    AlertDialog(
+        onDismissRequest = { onConfirm(resolvedRank()) },
+        title = { Text("Rank this game", color = NeonBlue) },
+        text = {
+            Column {
+                Text(
+                    "Choose where it lands in your Top 250. It and everything below shifts down one spot.",
+                    color = TextSecondary
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.filter(Char::isDigit) },
+                    label = { Text("Rank (1-$maxRank)") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = NeonBlue,
+                        unfocusedBorderColor = TextSecondary,
+                        cursorColor = NeonBlue
+                    )
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(resolvedRank()) }) { Text("ADD") } }
     )
 }
 

@@ -23,15 +23,22 @@ class TopRankingStore(context: Context) {
         prefs.edit().putString(KEY_RANKING, ranking.joinToString(",")).apply()
     }
 
+    /** Number of games currently ranked, stale ids included — good enough for a UI default. */
+    fun count(): Int = rawRanking().size
+
     /**
      * Doesn't need the caller's full game-id set: a stale id left behind by a
      * deleted game is harmless here since every read goes through
      * [loadRanking], which always re-filters against the current games.
+     *
+     * [atRank] inserts at that 1-based position, shifting every game from
+     * there down one rank; omitted (or out of range), it appends to the end.
      */
-    fun addGame(gameId: Long) {
+    fun addGame(gameId: Long, atRank: Int? = null) {
         val current = rawRanking()
         if (gameId in current || current.size >= MAX_RANKED) return
-        saveRanking(current + gameId)
+        val index = (atRank?.minus(1) ?: current.size).coerceIn(0, current.size)
+        saveRanking(current.toMutableList().apply { add(index, gameId) })
     }
 
     fun removeGame(gameId: Long) {
