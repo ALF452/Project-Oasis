@@ -30,11 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.LogEntryEntity
 import com.oasis.tracker.data.Platforms
+import com.oasis.tracker.ui.components.ConfirmDialog
 import com.oasis.tracker.ui.components.MonthCalendar
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.rememberOasisApp
@@ -50,12 +53,14 @@ import java.time.format.DateTimeFormatter
 fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
     val app = rememberOasisApp()
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     val game by app.gameRepository.game(gameId).collectAsState(initial = null)
     val entries by app.gameRepository.entriesForGame(gameId).collectAsState(initial = emptyList())
 
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var dialogDate by remember { mutableStateOf<LocalDate?>(null) }
+    var entryPendingDelete by remember { mutableStateOf<LogEntryEntity?>(null) }
 
     val entriesByDate = remember(entries) {
         entries.groupBy { LocalDate.ofEpochDay(it.epochDay) }
@@ -126,7 +131,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
                     DiaryRow(
                         entry = entry,
                         onClick = { dialogDate = LocalDate.ofEpochDay(entry.epochDay) },
-                        onDelete = { scope.launch { app.gameRepository.deleteEntry(entry) } }
+                        onDelete = { entryPendingDelete = entry }
                     )
                 }
             }
@@ -147,6 +152,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             // a brand-new entry, inserted the session twice.
             onSave = { hours, rating, notes ->
                 dialogDate = null
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 scope.launch {
                     if (existing != null) {
                         app.gameRepository.updateEntry(existing.copy(hours = hours, rating = rating, notes = notes))
@@ -158,9 +164,23 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             onDelete = existing?.let {
                 {
                     dialogDate = null
-                    scope.launch { app.gameRepository.deleteEntry(it) }
+                    entryPendingDelete = it
                 }
             }
+        )
+    }
+
+    entryPendingDelete?.let { entry ->
+        val entryDate = LocalDate.ofEpochDay(entry.epochDay).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+        ConfirmDialog(
+            title = "Delete session?",
+            message = "This will permanently delete the ${entry.hours}h session logged on $entryDate. This can't be undone.",
+            onConfirm = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                scope.launch { app.gameRepository.deleteEntry(entry) }
+                entryPendingDelete = null
+            },
+            onDismiss = { entryPendingDelete = null }
         )
     }
 }

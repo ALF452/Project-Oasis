@@ -29,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,7 @@ fun MainMenuScreen(
     val app = rememberOasisApp()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val updateState by app.updateManager.state.collectAsState()
 
     var crashReport by remember { mutableStateOf<String?>(null) }
@@ -71,6 +74,7 @@ fun MainMenuScreen(
     fun handleTileClick(tileId: String, navigate: () -> Unit) {
         if (transitioningTileId != null) return
         transitioningTileId = tileId
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         scope.launch {
             tileGlowFraction.snapTo(0f)
             tileGlowFraction.animateTo(1f, animationSpec = tween(450))
