@@ -1,70 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Subtle crosshair: mostly hidden behind the ring body below, so it
-         only shows through the O's hollow center and as short stubs just
-         past its outer edge, instead of reading as a separate reticle. -->
-    <path
-        android:pathData="M54,14 V94"
-        android:strokeColor="#4000E5FF"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M14,54 H94"
-        android:strokeColor="#4000E5FF"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round" />
+    <!-- Gun-barrel O: a slim ring standing in for the letterform, with
+         narrower rings nested inside it receding toward a bright point —
+         the Bond gun-barrel tunnel shot, not a crosshair. -->
 
-    <!-- Soft ambient bloom behind the ring -->
+    <!-- Faint ambient bloom just outside the ring, thin so it reads as
+         glow rather than adding bulk to the ring itself -->
     <path
-        android:pathData="M20.5,54 A33.5,33.5 0 1 1 87.5,54 A33.5,33.5 0 1 1 20.5,54"
+        android:pathData="M23,54 A31,31 0 1 1 85,54 A31,31 0 1 1 23,54"
         android:strokeColor="#2600E5FF"
-        android:strokeWidth="20"
-        android:strokeLineCap="round"
+        android:strokeWidth="5"
         android:fillColor="#00000000" />
 
-    <!-- The O itself: a single ring with a smooth radial blend from a
-         bright cyan inner rim to a deep teal outer rim, rather than
-         stacked hard-edged strokes, so the color reads as one continuous
-         surface instead of concentric bands. -->
+    <!-- The O itself -->
     <path
-        android:fillType="evenOdd"
-        android:pathData="M20.5,54 A33.5,33.5 0 1 1 87.5,54 A33.5,33.5 0 1 1 20.5,54 M35.5,54 A18.5,18.5 0 1 1 72.5,54 A18.5,18.5 0 1 1 35.5,54">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="radial"
-                android:centerX="54"
-                android:centerY="54"
-                android:gradientRadius="34"
-                android:startColor="#EFFDFF"
-                android:centerColor="#7FE9FF"
-                android:endColor="#0E4A57" />
-        </aapt:attr>
-    </path>
+        android:pathData="M23,54 A31,31 0 1 1 85,54 A31,31 0 1 1 23,54"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000" />
 
-    <!-- A single soft drip trailing from the O's base, blended rather than
-         forked, as a small unique flourish -->
+    <!-- Receding tunnel rings, each dimmer and smaller than the last -->
     <path
-        android:pathData="M54,80 L54,98"
-        android:strokeColor="#4000E5FF"
-        android:strokeWidth="10"
-        android:strokeLineCap="round" />
+        android:pathData="M29,54 A25,25 0 1 1 79,54 A25,25 0 1 1 29,54"
+        android:strokeColor="#CC00E5FF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
     <path
-        android:pathData="M54,82 L54,93"
-        android:strokeColor="#B3E5FF"
-        android:strokeWidth="4"
-        android:strokeLineCap="round" />
+        android:pathData="M35,54 A19,19 0 1 1 73,54 A19,19 0 1 1 35,54"
+        android:strokeColor="#9900E5FF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M41,54 A13,13 0 1 1 67,54 A13,13 0 1 1 41,54"
+        android:strokeColor="#7300E5FF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M46,54 A8,8 0 1 1 62,54 A8,8 0 1 1 46,54"
+        android:strokeColor="#4D00E5FF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000" />
 
-    <!-- Center HUD dot, softened with a blended glow instead of a flat disc -->
+    <!-- The bright point at the end of the tunnel -->
     <path
-        android:pathData="M54,54 m-7,0 a7,7 0 1 0 14,0 a7,7 0 1 0 -14,0"
-        android:fillColor="#2E00E5FF" />
+        android:pathData="M54,54 m-6,0 a6,6 0 1 0 12,0 a6,6 0 1 0 -12,0"
+        android:fillColor="#59FFFFFF" />
     <path
-        android:pathData="M54,54 m-2.5,0 a2.5,2.5 0 1 0 5,0 a2.5,2.5 0 1 0 -5,0"
-        android:fillColor="#00E5FF" />
+        android:pathData="M54,54 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0"
+        android:fillColor="#FFFFFFFF" />
 </vector>
