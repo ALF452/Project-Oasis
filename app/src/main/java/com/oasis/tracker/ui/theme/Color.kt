@@ -10,6 +10,8 @@ val NeonBlue = Color(0xFF00E5FF)
 val NeonBlueDim = Color(0xFF0891B2)
 val NeonBlueFaint = Color(0xFF123240)
 
+val NeonPurple = Color(0xFFB026FF)
+
 val TextPrimary = Color(0xFFE6FBFF)
 val TextSecondary = Color(0xFF7FA8B3)
 

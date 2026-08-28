@@ -68,13 +68,14 @@ fun Modifier.neonGlowBorder(
 fun NeonPanel(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 14.dp,
+    borderColor: Color = NeonBlue,
     content: @Composable () -> Unit
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius))
             .background(CharcoalSurface)
-            .neonGlowBorder(cornerRadius = cornerRadius)
+            .neonGlowBorder(cornerRadius = cornerRadius, color = borderColor)
     ) {
         content()
     }

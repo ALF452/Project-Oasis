@@ -1,5 +1,7 @@
 package com.oasis.tracker.ui.mainmenu
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +39,7 @@ import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.components.ReorderableTileGrid
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.NeonBlue
+import com.oasis.tracker.ui.theme.NeonPurple
 import com.oasis.tracker.ui.theme.TextSecondary
 import com.oasis.tracker.ui.update.UpdateBanner
 import com.oasis.tracker.update.UpdateState
@@ -67,6 +71,22 @@ fun MainMenuScreen(
     // outer grid's own scroll gesture can't steal the pointer from the
     // long-press-drag detector before it has a chance to fire.
     var scrollEnabled by remember { mutableStateOf(true) }
+
+    // Tapping a console tile bleeds its glow from blue to purple before the
+    // actual navigation happens, rather than cutting away instantly.
+    val tileGlowColor = remember { Animatable(NeonBlue) }
+    var transitioningPlatformId by remember { mutableStateOf<String?>(null) }
+    fun handlePlatformClick(platformId: String) {
+        if (transitioningPlatformId != null) return
+        transitioningPlatformId = platformId
+        scope.launch {
+            tileGlowColor.snapTo(NeonBlue)
+            tileGlowColor.animateTo(NeonPurple, animationSpec = tween(280))
+            onOpenPlatform(platformId)
+            transitioningPlatformId = null
+            tileGlowColor.snapTo(NeonBlue)
+        }
+    }
 
     // Re-check on cold start, and again any time the user returns to this
     // screen (e.g. after backing out of an update install that didn't finish).
@@ -153,10 +173,14 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> onOpenPlatform(platform.id) },
+                onItemClick = { platform -> handlePlatformClick(platform.id) },
                 onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
             ) { platform, _ ->
-                MenuTile(label = platform.glyph, sublabel = platform.displayName)
+                MenuTile(
+                    label = platform.glyph,
+                    sublabel = platform.displayName,
+                    borderColor = if (platform.id == transitioningPlatformId) tileGlowColor.value else NeonBlue
+                )
             }
         }
 
@@ -174,10 +198,14 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> onOpenPlatform(platform.id) },
+                onItemClick = { platform -> handlePlatformClick(platform.id) },
                 onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
             ) { platform, _ ->
-                MenuTile(label = platform.glyph, sublabel = platform.displayName)
+                MenuTile(
+                    label = platform.glyph,
+                    sublabel = platform.displayName,
+                    borderColor = if (platform.id == transitioningPlatformId) tileGlowColor.value else NeonBlue
+                )
             }
         }
 
@@ -202,9 +230,17 @@ fun MainMenuScreen(
 }
 
 @Composable
-private fun MenuTile(label: String, sublabel: String, onClick: (() -> Unit)? = null) {
+private fun MenuTile(
+    label: String,
+    sublabel: String,
+    onClick: (() -> Unit)? = null,
+    borderColor: Color = NeonBlue
+) {
     val tileModifier = Modifier.fillMaxWidth().height(96.dp)
-    NeonPanel(modifier = if (onClick != null) tileModifier.clickable(onClick = onClick) else tileModifier) {
+    NeonPanel(
+        modifier = if (onClick != null) tileModifier.clickable(onClick = onClick) else tileModifier,
+        borderColor = borderColor
+    ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             verticalArrangement = Arrangement.Center,
