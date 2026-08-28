@@ -54,7 +54,9 @@ fun MainMenuScreen(
     onOpenYearlyTracker: () -> Unit,
     onOpenPlatform: (String) -> Unit,
     onOpenSteam: () -> Unit,
-    onOpenTopRanking: () -> Unit
+    onOpenTopRanking: () -> Unit,
+    onOpenDiary: () -> Unit,
+    onOpenBacklog: () -> Unit
 ) {
     val app = rememberOasisApp()
     val context = LocalContext.current
@@ -146,6 +148,22 @@ fun MainMenuScreen(
 
         item(span = { GridItemSpan(2) }) {
             Text(
+                text = "ACTIVITY",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(2) }) {
+            MenuTile(
+                label = "DIARY",
+                sublabel = "Every session, most recent first",
+                onClick = { handleTileClick("diary", onOpenDiary) },
+                borderColor = tileBorderColor("diary")
+            )
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
                 text = "ACCOUNTS",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(top = 8.dp)
@@ -173,6 +191,22 @@ fun MainMenuScreen(
                 sublabel = "Your custom ranking",
                 onClick = { handleTileClick("top_ranking", onOpenTopRanking) },
                 borderColor = tileBorderColor("top_ranking")
+            )
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "BACKLOG",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(2) }) {
+            MenuTile(
+                label = "BACKLOG",
+                sublabel = "What to play next",
+                onClick = { handleTileClick("backlog", onOpenBacklog) },
+                borderColor = tileBorderColor("backlog")
             )
         }
 

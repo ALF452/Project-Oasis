@@ -46,4 +46,17 @@ interface LogEntryDao {
         """
     )
     fun observeEntriesWithGameForDay(day: Long): Flow<List<LogEntryWithGame>>
+
+    /** Every logged session across all games, most recent first — the global diary feed. */
+    @Query(
+        """
+        SELECT log_entries.id AS id, log_entries.gameId AS gameId, log_entries.epochDay AS epochDay,
+               log_entries.hours AS hours, log_entries.rating AS rating, log_entries.notes AS notes,
+               games.title AS gameTitle, games.platformId AS platformId, games.coverUrl AS coverUrl
+        FROM log_entries
+        INNER JOIN games ON games.id = log_entries.gameId
+        ORDER BY log_entries.epochDay DESC, log_entries.id DESC
+        """
+    )
+    fun observeAllEntriesWithGame(): Flow<List<LogEntryWithGame>>
 }

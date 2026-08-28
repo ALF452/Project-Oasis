@@ -9,9 +9,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.oasis.tracker.ui.backlog.BacklogScreen
+import com.oasis.tracker.ui.diary.DiaryFeedScreen
 import com.oasis.tracker.ui.gamedetail.GameDetailScreen
 import com.oasis.tracker.ui.mainmenu.MainMenuScreen
 import com.oasis.tracker.ui.platform.PlatformDetailScreen
+import com.oasis.tracker.ui.search.GameSearchMode
 import com.oasis.tracker.ui.search.GameSearchScreen
 import com.oasis.tracker.ui.steam.SteamGameAchievementsScreen
 import com.oasis.tracker.ui.steam.SteamLoginScreen
@@ -35,7 +38,28 @@ fun OasisRoot() {
                 onOpenYearlyTracker = { navController.navigate(OasisDestinations.YEARLY_TRACKER) },
                 onOpenPlatform = { platformId -> navController.navigate(OasisDestinations.platformDetail(platformId)) },
                 onOpenSteam = { navController.navigate(OasisDestinations.STEAM) },
-                onOpenTopRanking = { navController.navigate(OasisDestinations.TOP_RANKING) }
+                onOpenTopRanking = { navController.navigate(OasisDestinations.TOP_RANKING) },
+                onOpenDiary = { navController.navigate(OasisDestinations.DIARY) },
+                onOpenBacklog = { navController.navigate(OasisDestinations.BACKLOG) }
+            )
+        }
+        composable(OasisDestinations.DIARY) {
+            DiaryFeedScreen(
+                onBack = { navController.popBackStack() },
+                onOpenGame = { gameId -> navController.navigate(OasisDestinations.gameDetail(gameId)) }
+            )
+        }
+        composable(OasisDestinations.BACKLOG) {
+            BacklogScreen(
+                onBack = { navController.popBackStack() },
+                onAddGame = { navController.navigate(OasisDestinations.BACKLOG_ADD) }
+            )
+        }
+        composable(OasisDestinations.BACKLOG_ADD) {
+            GameSearchScreen(
+                mode = GameSearchMode.AddToBacklog,
+                onBack = { navController.popBackStack() },
+                onGameAdded = { navController.popBackStack() }
             )
         }
         composable(OasisDestinations.STEAM) {
@@ -89,7 +113,7 @@ fun OasisRoot() {
         ) { backStackEntry ->
             val platformId = backStackEntry.arguments?.getString(OasisDestinations.ARG_PLATFORM_ID).orEmpty()
             GameSearchScreen(
-                platformId = platformId,
+                mode = GameSearchMode.AddToLibrary(platformId),
                 onBack = { navController.popBackStack() },
                 onGameAdded = { navController.popBackStack() }
             )

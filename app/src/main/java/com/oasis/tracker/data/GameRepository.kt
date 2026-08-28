@@ -72,4 +72,14 @@ class GameRepository(private val db: OasisDatabase) {
     suspend fun updateEntry(entry: LogEntryEntity) = db.logEntryDao().update(entry)
 
     suspend fun deleteEntry(entry: LogEntryEntity) = db.logEntryDao().delete(entry)
+
+    /** Every logged session across all games, most recent first — the global diary feed. */
+    fun allEntriesWithGame(): Flow<List<LogEntryWithGame>> = db.logEntryDao().observeAllEntriesWithGame()
+
+    fun backlog(): Flow<List<BacklogEntity>> = db.backlogDao().observeAll()
+
+    suspend fun addToBacklog(title: String, coverUrl: String?, sourceUrl: String?, summary: String?): Long =
+        db.backlogDao().insert(BacklogEntity(title = title, coverUrl = coverUrl, sourceUrl = sourceUrl, summary = summary))
+
+    suspend fun removeFromBacklog(entry: BacklogEntity) = db.backlogDao().delete(entry)
 }

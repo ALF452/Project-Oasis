@@ -51,9 +51,15 @@ import com.oasis.tracker.ui.theme.TextSecondary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
+/** Where a search result goes: tracked under a platform, or parked in the backlog with no platform yet. */
+sealed interface GameSearchMode {
+    data class AddToLibrary(val platformId: String) : GameSearchMode
+    data object AddToBacklog : GameSearchMode
+}
+
 @Composable
 fun GameSearchScreen(
-    platformId: String,
+    mode: GameSearchMode,
     onBack: () -> Unit,
     onGameAdded: () -> Unit
 ) {
@@ -94,8 +100,9 @@ fun GameSearchScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        val title = if (mode is GameSearchMode.AddToBacklog) "Add to Backlog" else "Add Game"
         TopAppBar(
-            title = { Text("Add Game", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(title, style = MaterialTheme.typography.titleLarge) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NeonBlue)
@@ -155,13 +162,21 @@ fun GameSearchScreen(
                         onClick = {
                             adding = true
                             scope.launch {
-                                app.gameRepository.addGame(
-                                    platformId = platformId,
-                                    title = result.title,
-                                    coverUrl = result.coverUrl,
-                                    sourceUrl = result.sourceUrl,
-                                    summary = result.subtitle
-                                )
+                                when (mode) {
+                                    is GameSearchMode.AddToLibrary -> app.gameRepository.addGame(
+                                        platformId = mode.platformId,
+                                        title = result.title,
+                                        coverUrl = result.coverUrl,
+                                        sourceUrl = result.sourceUrl,
+                                        summary = result.subtitle
+                                    )
+                                    GameSearchMode.AddToBacklog -> app.gameRepository.addToBacklog(
+                                        title = result.title,
+                                        coverUrl = result.coverUrl,
+                                        sourceUrl = result.sourceUrl,
+                                        summary = result.subtitle
+                                    )
+                                }
                                 onGameAdded()
                             }
                         }

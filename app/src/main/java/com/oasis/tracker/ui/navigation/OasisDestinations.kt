@@ -12,6 +12,9 @@ object OasisDestinations {
     const val STEAM_ACHIEVEMENTS = "steam/achievements/{appId}"
     const val TOP_RANKING = "top_ranking"
     const val TOP_RANKING_ADD = "top_ranking/add"
+    const val DIARY = "diary"
+    const val BACKLOG = "backlog"
+    const val BACKLOG_ADD = "backlog/add"
 
     const val ARG_PLATFORM_ID = "platformId"
     const val ARG_GAME_ID = "gameId"
