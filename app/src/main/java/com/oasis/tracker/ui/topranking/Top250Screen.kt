@@ -94,7 +94,7 @@ fun Top250Screen(
             }
             rankedGames.isEmpty() -> Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    "Your Top 250 is empty. Tap + to add a game you've logged and start ranking.",
+                    "Your Top 250 is empty. Tap + to search for a game and start ranking.",
                     color = TextSecondary,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -123,7 +123,7 @@ fun Top250Screen(
                         game = game,
                         onRemove = {
                             rankingIds = rankingIds - game.id
-                            store.removeGame(game.id, games.map { it.id }.toSet())
+                            store.removeGame(game.id)
                         }
                     )
                 }

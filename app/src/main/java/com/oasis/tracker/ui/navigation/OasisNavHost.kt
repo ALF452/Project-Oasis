@@ -20,7 +20,6 @@ import com.oasis.tracker.ui.steam.SteamGameAchievementsScreen
 import com.oasis.tracker.ui.steam.SteamLoginScreen
 import com.oasis.tracker.ui.steam.SteamScreen
 import com.oasis.tracker.ui.topranking.Top250Screen
-import com.oasis.tracker.ui.topranking.TopRankingAddScreen
 import com.oasis.tracker.ui.tracker.MonthlyTrackerScreen
 import com.oasis.tracker.ui.tracker.YearlyTrackerScreen
 
@@ -89,7 +88,11 @@ fun OasisRoot() {
             )
         }
         composable(OasisDestinations.TOP_RANKING_ADD) {
-            TopRankingAddScreen(onBack = { navController.popBackStack() })
+            GameSearchScreen(
+                mode = GameSearchMode.AddToTopRanking,
+                onBack = { navController.popBackStack() },
+                onGameAdded = { navController.popBackStack() }
+            )
         }
         composable(
             route = OasisDestinations.STEAM_ACHIEVEMENTS,

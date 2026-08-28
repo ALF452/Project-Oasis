@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.FavoritesStore
 import com.oasis.tracker.data.Platforms
+import com.oasis.tracker.data.TopRankingStore
 import com.oasis.tracker.network.GameSearchResult
 import com.oasis.tracker.network.SearchOutcome
 import com.oasis.tracker.network.SearchSource
@@ -58,11 +59,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** Where a search result goes: tracked under a platform, parked in the backlog with no
- *  platform yet, or pinned as a favorite (also needs a platform, chosen after picking it). */
+ *  platform yet, or pinned as a favorite/ranked in the Top 250 (both also need a
+ *  platform, chosen after picking the result). */
 sealed interface GameSearchMode {
     data class AddToLibrary(val platformId: String) : GameSearchMode
     data object AddToBacklog : GameSearchMode
     data object AddToFavorites : GameSearchMode
+    data object AddToTopRanking : GameSearchMode
 }
 
 @Composable
@@ -76,9 +79,9 @@ fun GameSearchScreen(
     val scope = rememberCoroutineScope()
 
     var query by remember { mutableStateOf("") }
-    // Set when a result is tapped in AddToFavorites mode: that mode still needs a
-    // platform (every tracked game has one), so the actual add waits on this choice.
-    var pendingFavorite by remember { mutableStateOf<GameSearchResult?>(null) }
+    // Set when a result is tapped in AddToFavorites/AddToTopRanking mode: both still
+    // need a platform (every tracked game has one), so the actual add waits on this.
+    var pendingPlatformPick by remember { mutableStateOf<GameSearchResult?>(null) }
     var results by remember { mutableStateOf<List<GameSearchResult>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var searched by remember { mutableStateOf(false) }
@@ -115,6 +118,7 @@ fun GameSearchScreen(
         val title = when (mode) {
             GameSearchMode.AddToBacklog -> "Add to Backlog"
             GameSearchMode.AddToFavorites -> "Add Favorite"
+            GameSearchMode.AddToTopRanking -> "Add to Top 250"
             is GameSearchMode.AddToLibrary -> "Add Game"
         }
         TopAppBar(
@@ -202,7 +206,7 @@ fun GameSearchScreen(
                                         onGameAdded()
                                     }
                                 }
-                                GameSearchMode.AddToFavorites -> pendingFavorite = result
+                                GameSearchMode.AddToFavorites, GameSearchMode.AddToTopRanking -> pendingPlatformPick = result
                             }
                         }
                     )
@@ -211,10 +215,10 @@ fun GameSearchScreen(
         }
     }
 
-    pendingFavorite?.let { result ->
+    pendingPlatformPick?.let { result ->
         PlatformPickerDialog(
             onSelect = { platformId ->
-                pendingFavorite = null
+                pendingPlatformPick = null
                 adding = true
                 scope.launch {
                     val gameId = app.gameRepository.addGame(
@@ -224,11 +228,15 @@ fun GameSearchScreen(
                         sourceUrl = result.sourceUrl,
                         summary = result.subtitle
                     )
-                    FavoritesStore(context).addFavorite(gameId)
+                    when (mode) {
+                        GameSearchMode.AddToFavorites -> FavoritesStore(context).addFavorite(gameId)
+                        GameSearchMode.AddToTopRanking -> TopRankingStore(context).addGame(gameId)
+                        else -> Unit
+                    }
                     onGameAdded()
                 }
             },
-            onDismiss = { pendingFavorite = null }
+            onDismiss = { pendingPlatformPick = null }
         )
     }
 }

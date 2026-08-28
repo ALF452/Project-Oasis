@@ -23,15 +23,23 @@ class TopRankingStore(context: Context) {
         prefs.edit().putString(KEY_RANKING, ranking.joinToString(",")).apply()
     }
 
-    fun addGame(gameId: Long, existingGameIds: Set<Long>) {
-        val current = loadRanking(existingGameIds)
+    /**
+     * Doesn't need the caller's full game-id set: a stale id left behind by a
+     * deleted game is harmless here since every read goes through
+     * [loadRanking], which always re-filters against the current games.
+     */
+    fun addGame(gameId: Long) {
+        val current = rawRanking()
         if (gameId in current || current.size >= MAX_RANKED) return
         saveRanking(current + gameId)
     }
 
-    fun removeGame(gameId: Long, existingGameIds: Set<Long>) {
-        saveRanking(loadRanking(existingGameIds).filter { it != gameId })
+    fun removeGame(gameId: Long) {
+        saveRanking(rawRanking().filter { it != gameId })
     }
+
+    private fun rawRanking(): List<Long> =
+        prefs.getString(KEY_RANKING, null)?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
 
     companion object {
         private const val PREFS_NAME = "oasis_top_ranking"

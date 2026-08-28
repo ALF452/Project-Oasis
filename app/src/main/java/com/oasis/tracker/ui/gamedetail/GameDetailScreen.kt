@@ -61,6 +61,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var dialogDate by remember { mutableStateOf<LocalDate?>(null) }
     var entryPendingDelete by remember { mutableStateOf<LogEntryEntity?>(null) }
+    var gamePendingDelete by remember { mutableStateOf(false) }
 
     val entriesByDate = remember(entries) {
         entries.groupBy { LocalDate.ofEpochDay(it.epochDay) }
@@ -73,6 +74,13 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NeonBlue)
+                }
+            },
+            actions = {
+                if (game != null) {
+                    IconButton(onClick = { gamePendingDelete = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete game", tint = TextSecondary)
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = CharcoalBackground)
@@ -182,6 +190,24 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
             },
             onDismiss = { entryPendingDelete = null }
         )
+    }
+
+    if (gamePendingDelete) {
+        game?.let { g ->
+            ConfirmDialog(
+                title = "Delete ${g.title}?",
+                message = "This will permanently remove this game and every session logged for it. This can't be undone.",
+                onConfirm = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    gamePendingDelete = false
+                    scope.launch {
+                        app.gameRepository.removeGame(g)
+                        onBack()
+                    }
+                },
+                onDismiss = { gamePendingDelete = false }
+            )
+        }
     }
 }
 
