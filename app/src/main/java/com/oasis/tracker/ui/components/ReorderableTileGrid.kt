@@ -20,12 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
-
-/** Matches Compose's default long-press threshold; used to bound how long a
- *  tile press can ask the parent scroll container to stand down (see below). */
-private const val LONG_PRESS_TIMEOUT_MS = 500L
 
 /**
  * A small, non-lazy grid (meant for dozens of items, not thousands) that
@@ -77,28 +72,20 @@ fun <T> ReorderableTileGrid(
                                     }
                                 )
                                 .pointerInput(id) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            // Tell the parent scroll container to stand down just long
-                                            // enough to win the initial pointer-move race against the
-                                            // long-press-drag detector below (a scrollable parent
-                                            // otherwise consumes small moves immediately, canceling the
-                                            // long press before it ever fires). Bounded to the long-press
-                                            // window rather than the whole press: blocking scroll for the
-                                            // full press-to-release duration made any scroll gesture that
-                                            // happened to start on a tile feel broken, since tiles cover
-                                            // most of the screen. If a drag actually starts, the drag
-                                            // detector below takes over holding scroll off for its own
-                                            // duration via the same ref-counted callback.
-                                            onPressActiveChanged(true)
-                                            try {
-                                                withTimeoutOrNull(LONG_PRESS_TIMEOUT_MS) { tryAwaitRelease() }
-                                            } finally {
-                                                onPressActiveChanged(false)
-                                            }
-                                        },
-                                        onTap = { onItemClick(item) }
-                                    )
+                                    // No onPress here on purpose: an earlier version disabled the
+                                    // parent's scroll on every press to protect the long-press-drag
+                                    // detector below from losing a race against the parent scrolling.
+                                    // That race doesn't actually exist — Compose's own long-press
+                                    // detector cancels itself the instant the pointer moves past touch
+                                    // slop, using the raw distance moved, regardless of whether the
+                                    // parent's scrollable "wins" consumption of that same movement. So
+                                    // disabling the parent never changed whether the long press
+                                    // survived; it only added latency to every tap and to every scroll
+                                    // gesture that happened to start on a tile, which is most of the
+                                    // screen. Scroll is now only ever blocked once a drag has actually
+                                    // started (see onDragStart/onDragEnd/onDragCancel below), which is
+                                    // the one case blocking it is genuinely needed.
+                                    detectTapGestures(onTap = { onItemClick(item) })
                                 }
                                 .pointerInput(id) {
                                     detectDragGesturesAfterLongPress(
