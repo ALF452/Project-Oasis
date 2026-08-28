@@ -61,6 +61,7 @@ import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.diagnostics.CrashReportDialog
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.CharcoalBackground
+import com.oasis.tracker.ui.theme.CharcoalSurface
 import com.oasis.tracker.ui.theme.NeonBlue
 import com.oasis.tracker.ui.theme.NeonPurple
 import com.oasis.tracker.ui.theme.TextSecondary
@@ -382,15 +383,38 @@ private fun FavoritesRow(
 @Composable
 private fun FilledFavoriteSlot(game: GameEntity, onClick: () -> Unit, onRemove: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
-        AsyncImage(
-            model = game.coverUrl,
-            contentDescription = game.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onClick)
-        )
+        if (game.coverUrl != null) {
+            AsyncImage(
+                model = game.coverUrl,
+                contentDescription = game.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onClick)
+            )
+        } else {
+            // No cover art found from either source for this one — show the title
+            // instead of leaving the tile looking like a blank, broken void.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CharcoalSurface)
+                    .border(1.dp, TextSecondary, RoundedCornerShape(8.dp))
+                    .clickable(onClick = onClick)
+                    .padding(6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    game.title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = NeonBlue,
+                    textAlign = TextAlign.Center,
+                    maxLines = 4
+                )
+            }
+        }
         IconButton(
             onClick = onRemove,
             modifier = Modifier

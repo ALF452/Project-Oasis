@@ -65,4 +65,19 @@ class GameSearchRepository(
     }
 
     private fun stripHtml(text: String?): String? = text?.replace(Regex("<[^>]*>"), "")
+
+    /**
+     * Wikipedia's lightweight search endpoint often omits a thumbnail even when
+     * the page has one, since it's only returning search-snippet metadata — the
+     * fuller page-summary endpoint (the article's actual lead image) usually has
+     * it. Only worth the extra request at the point a result is actually being
+     * added, not for every row in a 15-result search list.
+     */
+    suspend fun resolveBestCoverUrl(result: GameSearchResult): String? {
+        if (result.coverUrl != null || result.source != SearchSource.WIKIPEDIA) return result.coverUrl
+        val key = result.sourceUrl.substringAfterLast("/wiki/")
+        return runCatching { wikipediaApi.summary(key) }
+            .getOrNull()
+            ?.let { normalizeProtocolRelativeUrl(it.thumbnail?.url ?: it.originalimage?.url) }
+    }
 }
