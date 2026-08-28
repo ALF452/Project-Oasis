@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,10 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.oasis.tracker.data.PlatformOrderStore
 import com.oasis.tracker.data.Platforms
 import com.oasis.tracker.ui.components.NeonPanel
-import com.oasis.tracker.ui.components.ReorderableTileGrid
 import com.oasis.tracker.ui.diagnostics.CrashReportDialog
 import com.oasis.tracker.ui.rememberOasisApp
 import com.oasis.tracker.ui.theme.NeonBlue
@@ -59,23 +58,6 @@ fun MainMenuScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val updateState by app.updateManager.state.collectAsState()
-
-    val orderStore = remember { PlatformOrderStore(context) }
-    val modernPlatforms = remember {
-        orderStore.loadOrder(PlatformOrderStore.KEY_MODERN, Platforms.MODERN_PLATFORMS.map { it.id })
-            .map { Platforms.byId(it) }
-    }
-    val retroPlatforms = remember {
-        orderStore.loadOrder(PlatformOrderStore.KEY_RETRO, Platforms.RETRO_PLATFORMS.map { it.id })
-            .map { Platforms.byId(it) }
-    }
-    // Disabled while a tile in either reorderable grid is asking for the
-    // outer grid's scroll to stand down (see ReorderableTileGrid). Ref-counted
-    // rather than a plain flag since a single press-then-drag can issue two
-    // overlapping requests (the initial press's bounded window, then the
-    // drag's own lifecycle) that must both clear before scroll resumes.
-    var scrollBlockCount by remember { mutableStateOf(0) }
-    val scrollEnabled = scrollBlockCount == 0
 
     var crashReport by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
@@ -121,7 +103,6 @@ fun MainMenuScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
-        userScrollEnabled = scrollEnabled,
         modifier = Modifier.fillMaxSize()
     ) {
         item(span = { GridItemSpan(2) }) {
@@ -198,22 +179,13 @@ fun MainMenuScreen(
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-        item(span = { GridItemSpan(2) }) {
-            ReorderableTileGrid(
-                items = modernPlatforms,
-                itemId = { it.id },
-                onOrderChanged = { newOrder ->
-                    orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
-                },
-                onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
-                onPressActiveChanged = { active -> scrollBlockCount += if (active) 1 else -1 }
-            ) { platform, _ ->
-                MenuTile(
-                    label = platform.glyph,
-                    sublabel = platform.displayName,
-                    borderColor = tileBorderColor(platform.id)
-                )
-            }
+        items(Platforms.MODERN_PLATFORMS, key = { it.id }) { platform ->
+            MenuTile(
+                label = platform.glyph,
+                sublabel = platform.displayName,
+                onClick = { handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
+                borderColor = tileBorderColor(platform.id)
+            )
         }
 
         item(span = { GridItemSpan(2) }) {
@@ -223,22 +195,13 @@ fun MainMenuScreen(
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-        item(span = { GridItemSpan(2) }) {
-            ReorderableTileGrid(
-                items = retroPlatforms,
-                itemId = { it.id },
-                onOrderChanged = { newOrder ->
-                    orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
-                },
-                onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
-                onPressActiveChanged = { active -> scrollBlockCount += if (active) 1 else -1 }
-            ) { platform, _ ->
-                MenuTile(
-                    label = platform.glyph,
-                    sublabel = platform.displayName,
-                    borderColor = tileBorderColor(platform.id)
-                )
-            }
+        items(Platforms.RETRO_PLATFORMS, key = { it.id }) { platform ->
+            MenuTile(
+                label = platform.glyph,
+                sublabel = platform.displayName,
+                onClick = { handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
+                borderColor = tileBorderColor(platform.id)
+            )
         }
 
         if (updateState != UpdateState.Idle && updateState != UpdateState.Checking) {

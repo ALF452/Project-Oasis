@@ -4,8 +4,8 @@ import android.content.Context
 
 /**
  * Persists the user's custom Top 250 game ranking as a comma-joined,
- * ordered list of game ids in SharedPreferences. Unlike [PlatformOrderStore],
- * new games are never auto-added here — only games the user explicitly ranks.
+ * ordered list of game ids in SharedPreferences. New games are never
+ * auto-added here — only games the user explicitly ranks.
  */
 class TopRankingStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
