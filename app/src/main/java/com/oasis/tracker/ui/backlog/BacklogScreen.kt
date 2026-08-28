@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.BacklogEntity
@@ -100,9 +101,20 @@ private fun BacklogRow(entry: BacklogEntity, onRemove: () -> Unit) {
                 modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp))
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(entry.title, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(
+                    entry.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 entry.summary?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 2, color = TextSecondary)
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextSecondary
+                    )
                 }
             }
             IconButton(onClick = onRemove) {

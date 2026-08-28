@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.FavoritesStore
@@ -345,7 +346,7 @@ private fun SearchResultRow(result: GameSearchResult, enabled: Boolean, onClick:
             Column(modifier = Modifier.weight(1f)) {
                 Text(result.title, style = MaterialTheme.typography.titleMedium)
                 result.subtitle?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                    Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 Text(
                     text = if (result.source == SearchSource.WIKIPEDIA) "WIKIPEDIA" else "ARCHIVE.ORG",

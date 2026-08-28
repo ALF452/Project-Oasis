@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.network.steam.SteamAchievement
@@ -62,7 +63,14 @@ fun SteamGameAchievementsScreen(appId: Int, onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(result?.gameName ?: "Achievements", style = MaterialTheme.typography.titleLarge, maxLines = 1) },
+            title = {
+                Text(
+                    result?.gameName ?: "Achievements",
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NeonBlue)

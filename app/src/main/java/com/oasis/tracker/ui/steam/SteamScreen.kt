@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.network.steam.SteamConnectionState
@@ -245,7 +246,12 @@ private fun SteamGameRow(game: SteamGameSummary, onClick: () -> Unit) {
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(game.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(
+                    game.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 val hours = game.playtimeMinutes / 60f
                 Text("%.1f hrs played".format(hours), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
             }

@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.LogEntryEntity
@@ -70,7 +71,14 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(game?.title ?: "", style = MaterialTheme.typography.titleLarge, maxLines = 1) },
+            title = {
+                Text(
+                    game?.title ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NeonBlue)
@@ -99,7 +107,7 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
                         Column(modifier = Modifier.padding(start = 12.dp)) {
                             Text(Platforms.byId(g.platformId).displayName, style = MaterialTheme.typography.labelLarge)
                             g.summary?.let {
-                                Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4)
+                                Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }

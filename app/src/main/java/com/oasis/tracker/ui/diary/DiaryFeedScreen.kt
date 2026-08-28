@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.LogEntryWithGame
@@ -123,7 +124,12 @@ private fun DiaryFeedRow(entry: LogEntryWithGame, onClick: () -> Unit) {
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(entry.gameTitle, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(
+                    entry.gameTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(Platforms.byId(entry.platformId).displayName, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     entry.rating?.let { rating ->

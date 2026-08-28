@@ -4,6 +4,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.* // weight() as a single named import collides with an internal same-named property in this Compose version
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
@@ -47,6 +48,14 @@ fun <T> ReorderableTileGrid(
     var draggingId by remember { mutableStateOf<String?>(null) }
     var pointerPositionInWindow by remember { mutableStateOf(Offset.Zero) }
     var dragVisualOffset by remember { mutableStateOf(Offset.Zero) }
+
+    // Coordinates are only ever added on layout, never removed — without this, a
+    // game dropped from the list (removed from Top 250, unfavorited) leaves its
+    // LayoutCoordinates behind in the map for the rest of this screen's lifetime.
+    LaunchedEffect(items.map(itemId)) {
+        val currentIds = items.map(itemId).toSet()
+        itemCoordinates.keys.retainAll(currentIds)
+    }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(verticalSpacing)) {
         order.chunked(columns).forEachIndexed { rowIndex, rowItems ->

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.data.GameEntity
@@ -166,7 +167,12 @@ private fun TopRankRow(rank: Int, game: GameEntity, onRemove: () -> Unit) {
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp))
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(game.title, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(
+                    game.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(
                     Platforms.byId(game.platformId).displayName,
                     style = MaterialTheme.typography.bodyMedium,

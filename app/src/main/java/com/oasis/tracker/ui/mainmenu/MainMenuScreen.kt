@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -459,7 +460,8 @@ private fun FilledFavoriteSlot(game: GameEntity, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelMedium,
                 color = NeonBlue,
                 textAlign = TextAlign.Center,
-                maxLines = 4
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
