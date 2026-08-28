@@ -54,7 +54,10 @@ android {
         buildConfigField("String", "GITHUB_OWNER", "\"ALF452\"")
         buildConfigField("String", "GITHUB_REPO", "\"Project-Oasis\"")
         buildConfigField("String", "STEAM_API_KEY", "\"$steamApiKey\"")
-        buildConfigField("String", "STEAM_RETURN_URL", "\"oasis://steamcallback\"")
+        // Steam's OpenID rejects non-http(s) return_to values ("Invalid return
+        // protocol"), so login happens in an in-app WebView that intercepts
+        // navigation to this URL directly — it's never actually loaded/hosted.
+        buildConfigField("String", "STEAM_RETURN_URL", "\"https://oasis.invalid/steamcallback\"")
     }
 
     signingConfigs {
@@ -123,7 +126,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.navigation:navigation-compose:2.8.4")
-    implementation("androidx.browser:browser:1.8.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

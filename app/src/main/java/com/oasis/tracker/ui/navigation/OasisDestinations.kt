@@ -8,7 +8,10 @@ object OasisDestinations {
     const val GAME_SEARCH = "search/{platformId}"
     const val GAME_DETAIL = "game/{gameId}"
     const val STEAM = "steam"
+    const val STEAM_LOGIN = "steam/login"
     const val STEAM_ACHIEVEMENTS = "steam/achievements/{appId}"
+    const val TOP_RANKING = "top_ranking"
+    const val TOP_RANKING_ADD = "top_ranking/add"
 
     const val ARG_PLATFORM_ID = "platformId"
     const val ARG_GAME_ID = "gameId"

@@ -14,7 +14,10 @@ import com.oasis.tracker.ui.mainmenu.MainMenuScreen
 import com.oasis.tracker.ui.platform.PlatformDetailScreen
 import com.oasis.tracker.ui.search.GameSearchScreen
 import com.oasis.tracker.ui.steam.SteamGameAchievementsScreen
+import com.oasis.tracker.ui.steam.SteamLoginScreen
 import com.oasis.tracker.ui.steam.SteamScreen
+import com.oasis.tracker.ui.topranking.Top250Screen
+import com.oasis.tracker.ui.topranking.TopRankingAddScreen
 import com.oasis.tracker.ui.tracker.MonthlyTrackerScreen
 import com.oasis.tracker.ui.tracker.YearlyTrackerScreen
 
@@ -31,14 +34,29 @@ fun OasisRoot() {
                 onOpenMonthlyTracker = { navController.navigate(OasisDestinations.MONTHLY_TRACKER) },
                 onOpenYearlyTracker = { navController.navigate(OasisDestinations.YEARLY_TRACKER) },
                 onOpenPlatform = { platformId -> navController.navigate(OasisDestinations.platformDetail(platformId)) },
-                onOpenSteam = { navController.navigate(OasisDestinations.STEAM) }
+                onOpenSteam = { navController.navigate(OasisDestinations.STEAM) },
+                onOpenTopRanking = { navController.navigate(OasisDestinations.TOP_RANKING) }
             )
         }
         composable(OasisDestinations.STEAM) {
             SteamScreen(
                 onBack = { navController.popBackStack() },
+                onOpenLogin = { navController.navigate(OasisDestinations.STEAM_LOGIN) },
                 onOpenGameAchievements = { appId -> navController.navigate(OasisDestinations.steamAchievements(appId)) }
             )
+        }
+        composable(OasisDestinations.STEAM_LOGIN) {
+            SteamLoginScreen(onBack = { navController.popBackStack() })
+        }
+        composable(OasisDestinations.TOP_RANKING) {
+            Top250Screen(
+                onBack = { navController.popBackStack() },
+                onOpenGame = { gameId -> navController.navigate(OasisDestinations.gameDetail(gameId)) },
+                onAddGame = { navController.navigate(OasisDestinations.TOP_RANKING_ADD) }
+            )
+        }
+        composable(OasisDestinations.TOP_RANKING_ADD) {
+            TopRankingAddScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = OasisDestinations.STEAM_ACHIEVEMENTS,

@@ -1,7 +1,5 @@
 package com.oasis.tracker.ui.steam
 
-import android.net.Uri
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.* // weight() as a single named import collides with an internal same-named property in this Compose version
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.oasis.tracker.network.steam.SteamConnectionState
@@ -54,24 +51,14 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @Composable
-fun SteamScreen(onBack: () -> Unit, onOpenGameAchievements: (Int) -> Unit) {
+fun SteamScreen(onBack: () -> Unit, onOpenLogin: () -> Unit, onOpenGameAchievements: (Int) -> Unit) {
     val app = rememberOasisApp()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = app.steamRepository
     val connectionState by repo.connectionState.collectAsState()
-    val callbackUri by app.steamLoginCallback.collectAsState()
 
     LaunchedEffect(Unit) {
         repo.restoreSession()
-    }
-
-    LaunchedEffect(callbackUri) {
-        val uri = callbackUri
-        if (uri != null) {
-            repo.handleLoginCallback(uri)
-            app.consumeSteamLoginCallback()
-        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -91,12 +78,7 @@ fun SteamScreen(onBack: () -> Unit, onOpenGameAchievements: (Int) -> Unit) {
         }
 
         when (val state = connectionState) {
-            is SteamConnectionState.Disconnected -> ConnectPrompt(
-                onConnect = {
-                    val url = repo.loginUrl()
-                    CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
-                }
-            )
+            is SteamConnectionState.Disconnected -> ConnectPrompt(onConnect = onOpenLogin)
             is SteamConnectionState.Connecting -> Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center

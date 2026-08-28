@@ -12,10 +12,11 @@ private const val STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/log
 
 /**
  * Steam has no OAuth app-registration flow for third parties — "Sign in
- * through Steam" is OpenID 2.0. There's no server-side callback route here
- * (the app has no backend), so [BuildConfig.STEAM_RETURN_URL] is a custom
- * URL scheme (oasis://steamcallback) that Android hands back to this app via
- * the intent-filter in the manifest once Steam redirects the Custom Tab.
+ * through Steam" is OpenID 2.0, which requires an http(s) return_to URL (a
+ * custom scheme is rejected outright). There's no server-side callback route
+ * here (the app has no backend), so [BuildConfig.STEAM_RETURN_URL] is a
+ * placeholder https URL that's never actually hosted — the login WebView
+ * intercepts navigation to it directly instead of letting it load.
  */
 object SteamOpenId {
 
