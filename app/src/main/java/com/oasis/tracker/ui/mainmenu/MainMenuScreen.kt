@@ -79,21 +79,23 @@ fun MainMenuScreen(
         crashReport = app.crashLogStore.read()
     }
 
-    // Tapping a console tile bleeds its glow from blue to purple before the
-    // actual navigation happens, rather than cutting away instantly.
+    // Tapping any main-menu tile bleeds its glow from blue to purple before
+    // the actual navigation happens, rather than cutting away instantly.
     val tileGlowFraction = remember { Animatable(0f) }
-    var transitioningPlatformId by remember { mutableStateOf<String?>(null) }
-    fun handlePlatformClick(platformId: String) {
-        if (transitioningPlatformId != null) return
-        transitioningPlatformId = platformId
+    var transitioningTileId by remember { mutableStateOf<String?>(null) }
+    fun handleTileClick(tileId: String, navigate: () -> Unit) {
+        if (transitioningTileId != null) return
+        transitioningTileId = tileId
         scope.launch {
             tileGlowFraction.snapTo(0f)
-            tileGlowFraction.animateTo(1f, animationSpec = tween(280))
-            onOpenPlatform(platformId)
-            transitioningPlatformId = null
+            tileGlowFraction.animateTo(1f, animationSpec = tween(450))
+            navigate()
+            transitioningTileId = null
             tileGlowFraction.snapTo(0f)
         }
     }
+    fun tileBorderColor(tileId: String): Color =
+        if (tileId == transitioningTileId) lerp(NeonBlue, NeonPurple, tileGlowFraction.value) else NeonBlue
 
     // Re-check on cold start, and again any time the user returns to this
     // screen (e.g. after backing out of an update install that didn't finish).
@@ -138,10 +140,20 @@ fun MainMenuScreen(
         }
 
         item(span = { GridItemSpan(1) }) {
-            MenuTile(label = "MONTHLY", sublabel = "Tracker", onClick = onOpenMonthlyTracker)
+            MenuTile(
+                label = "MONTHLY",
+                sublabel = "Tracker",
+                onClick = { handleTileClick("monthly", onOpenMonthlyTracker) },
+                borderColor = tileBorderColor("monthly")
+            )
         }
         item(span = { GridItemSpan(1) }) {
-            MenuTile(label = "YEARLY", sublabel = "Tracker", onClick = onOpenYearlyTracker)
+            MenuTile(
+                label = "YEARLY",
+                sublabel = "Tracker",
+                onClick = { handleTileClick("yearly", onOpenYearlyTracker) },
+                borderColor = tileBorderColor("yearly")
+            )
         }
 
         item(span = { GridItemSpan(2) }) {
@@ -152,7 +164,12 @@ fun MainMenuScreen(
             )
         }
         item(span = { GridItemSpan(2) }) {
-            MenuTile(label = "STEAM", sublabel = "Library & achievements", onClick = onOpenSteam)
+            MenuTile(
+                label = "STEAM",
+                sublabel = "Library & achievements",
+                onClick = { handleTileClick("steam", onOpenSteam) },
+                borderColor = tileBorderColor("steam")
+            )
         }
 
         item(span = { GridItemSpan(2) }) {
@@ -163,7 +180,12 @@ fun MainMenuScreen(
             )
         }
         item(span = { GridItemSpan(2) }) {
-            MenuTile(label = "TOP 250", sublabel = "Your custom ranking", onClick = onOpenTopRanking)
+            MenuTile(
+                label = "TOP 250",
+                sublabel = "Your custom ranking",
+                onClick = { handleTileClick("top_ranking", onOpenTopRanking) },
+                borderColor = tileBorderColor("top_ranking")
+            )
         }
 
         item(span = { GridItemSpan(2) }) {
@@ -180,17 +202,13 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_MODERN, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> handlePlatformClick(platform.id) },
+                onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
                 onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
             ) { platform, _ ->
                 MenuTile(
                     label = platform.glyph,
                     sublabel = platform.displayName,
-                    borderColor = if (platform.id == transitioningPlatformId) {
-                        lerp(NeonBlue, NeonPurple, tileGlowFraction.value)
-                    } else {
-                        NeonBlue
-                    }
+                    borderColor = tileBorderColor(platform.id)
                 )
             }
         }
@@ -209,17 +227,13 @@ fun MainMenuScreen(
                 onOrderChanged = { newOrder ->
                     orderStore.saveOrder(PlatformOrderStore.KEY_RETRO, newOrder.map { it.id })
                 },
-                onItemClick = { platform -> handlePlatformClick(platform.id) },
+                onItemClick = { platform -> handleTileClick(platform.id) { onOpenPlatform(platform.id) } },
                 onPressActiveChanged = { pressed -> scrollEnabled = !pressed }
             ) { platform, _ ->
                 MenuTile(
                     label = platform.glyph,
                     sublabel = platform.displayName,
-                    borderColor = if (platform.id == transitioningPlatformId) {
-                        lerp(NeonBlue, NeonPurple, tileGlowFraction.value)
-                    } else {
-                        NeonBlue
-                    }
+                    borderColor = tileBorderColor(platform.id)
                 )
             }
         }
