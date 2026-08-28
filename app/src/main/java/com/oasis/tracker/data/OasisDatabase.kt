@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [GameEntity::class, LogEntryEntity::class], version = 2, exportSchema = false)
+@Database(entities = [GameEntity::class, LogEntryEntity::class], version = 3, exportSchema = false)
 abstract class OasisDatabase : RoomDatabase() {
     abstract fun gameDao(): GameDao
     abstract fun logEntryDao(): LogEntryDao
@@ -22,13 +22,19 @@ abstract class OasisDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE log_entries ADD COLUMN rating REAL")
+            }
+        }
+
         fun getInstance(context: Context): OasisDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     OasisDatabase::class.java,
                     "oasis.db"
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
             }
     }
 }

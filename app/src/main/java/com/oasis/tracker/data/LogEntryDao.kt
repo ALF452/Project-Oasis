@@ -24,7 +24,7 @@ interface LogEntryDao {
     @Query(
         """
         SELECT log_entries.id AS id, log_entries.gameId AS gameId, log_entries.epochDay AS epochDay,
-               log_entries.hours AS hours, log_entries.notes AS notes,
+               log_entries.hours AS hours, log_entries.rating AS rating, log_entries.notes AS notes,
                games.title AS gameTitle, games.platformId AS platformId, games.coverUrl AS coverUrl
         FROM log_entries
         INNER JOIN games ON games.id = log_entries.gameId
@@ -37,7 +37,7 @@ interface LogEntryDao {
     @Query(
         """
         SELECT log_entries.id AS id, log_entries.gameId AS gameId, log_entries.epochDay AS epochDay,
-               log_entries.hours AS hours, log_entries.notes AS notes,
+               log_entries.hours AS hours, log_entries.rating AS rating, log_entries.notes AS notes,
                games.title AS gameTitle, games.platformId AS platformId, games.coverUrl AS coverUrl
         FROM log_entries
         INNER JOIN games ON games.id = log_entries.gameId

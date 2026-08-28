@@ -138,14 +138,15 @@ fun GameDetailScreen(gameId: Long, onBack: () -> Unit) {
         AddEditEntryDialog(
             date = date,
             initialHours = existing?.hours,
+            initialRating = existing?.rating,
             initialNotes = existing?.notes,
             onDismiss = { dialogDate = null },
-            onSave = { hours, notes ->
+            onSave = { hours, rating, notes ->
                 scope.launch {
                     if (existing != null) {
-                        app.gameRepository.updateEntry(existing.copy(hours = hours, notes = notes))
+                        app.gameRepository.updateEntry(existing.copy(hours = hours, rating = rating, notes = notes))
                     } else {
-                        app.gameRepository.logSession(gameId, date, hours, notes)
+                        app.gameRepository.logSession(gameId, date, hours, rating = rating, notes = notes)
                     }
                     dialogDate = null
                 }
@@ -178,6 +179,10 @@ private fun DiaryRow(entry: LogEntryEntity, onClick: () -> Unit, onDelete: () ->
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text("${entry.hours}h played", style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
+                entry.rating?.let {
+                    val ratingText = if (it % 1f == 0f) it.toInt().toString() else it.toString()
+                    Text("Rating: $ratingText / 10", style = MaterialTheme.typography.bodyMedium, color = NeonBlue)
+                }
                 entry.notes?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             }
             IconButton(onClick = onDelete) {

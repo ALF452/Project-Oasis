@@ -26,6 +26,8 @@ data class LogEntryEntity(
     val gameId: Long,
     val epochDay: Long,
     val hours: Float,
+    /** 0-10 in 0.5 increments; null means the session hasn't been rated. */
+    val rating: Float? = null,
     val notes: String? = null
 )
 
@@ -34,6 +36,7 @@ data class LogEntryWithGame(
     val gameId: Long,
     val epochDay: Long,
     val hours: Float,
+    val rating: Float?,
     val notes: String?,
     val gameTitle: String,
     val platformId: String,

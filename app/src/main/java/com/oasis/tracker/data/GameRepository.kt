@@ -63,9 +63,9 @@ class GameRepository(private val db: OasisDatabase) {
         return db.logEntryDao().observeEntriesWithGameInRange(start, end)
     }
 
-    suspend fun logSession(gameId: Long, date: LocalDate, hours: Float, notes: String?) {
+    suspend fun logSession(gameId: Long, date: LocalDate, hours: Float, rating: Float? = null, notes: String?) {
         db.logEntryDao().insert(
-            LogEntryEntity(gameId = gameId, epochDay = date.toEpochDay(), hours = hours, notes = notes)
+            LogEntryEntity(gameId = gameId, epochDay = date.toEpochDay(), hours = hours, rating = rating, notes = notes)
         )
     }
 
