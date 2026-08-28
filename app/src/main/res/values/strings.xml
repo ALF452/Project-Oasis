@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Oasis</string>
+    <string name="shortcut_diary_short">Diary</string>
+    <string name="shortcut_diary_long">Open Diary</string>
+    <string name="shortcut_top_ranking_short">Top 250</string>
+    <string name="shortcut_top_ranking_long">Open Top 250</string>
 </resources>

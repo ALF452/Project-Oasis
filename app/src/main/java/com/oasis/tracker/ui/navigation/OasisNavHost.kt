@@ -3,6 +3,7 @@ package com.oasis.tracker.ui.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,9 +25,19 @@ import com.oasis.tracker.ui.tracker.MonthlyTrackerScreen
 import com.oasis.tracker.ui.tracker.YearlyTrackerScreen
 import com.oasis.tracker.ui.wrapup.YearlyWrapUpScreen
 
+/** Routes a home-screen shortcut (see res/xml/shortcuts.xml) is allowed to jump straight to. */
+private val SHORTCUT_DESTINATIONS = setOf(OasisDestinations.DIARY, OasisDestinations.TOP_RANKING)
+
 @Composable
-fun OasisRoot() {
+fun OasisRoot(initialDestination: String? = null) {
     val navController = rememberNavController()
+    // MAIN_MENU stays the real start destination (so back navigation always lands
+    // home) — a shortcut just pushes its target on top of it once, right after launch.
+    LaunchedEffect(initialDestination) {
+        if (initialDestination != null && initialDestination in SHORTCUT_DESTINATIONS) {
+            navController.navigate(initialDestination)
+        }
+    }
     NavHost(
         navController = navController,
         startDestination = OasisDestinations.MAIN_MENU,

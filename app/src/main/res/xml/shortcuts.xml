@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="diary"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_diary_short"
+        android:shortcutLongLabel="@string/shortcut_diary_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.oasis.tracker"
+            android:targetClass="com.oasis.tracker.MainActivity">
+            <extra android:name="shortcut_destination" android:value="diary" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="top_ranking"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_top_ranking_short"
+        android:shortcutLongLabel="@string/shortcut_top_ranking_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.oasis.tracker"
+            android:targetClass="com.oasis.tracker.MainActivity">
+            <extra android:name="shortcut_destination" android:value="top_ranking" />
+        </intent>
+    </shortcut>
+</shortcuts>

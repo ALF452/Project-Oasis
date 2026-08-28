@@ -15,15 +15,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Launching via a home-screen shortcut (long-press the app icon) carries the
+        // target route as a plain extra — read only here, not in onNewIntent, since a
+        // shortcut always starts a fresh launch of this Activity in practice.
+        val shortcutDestination = intent?.getStringExtra(SHORTCUT_DESTINATION_EXTRA)
         setContent {
             OasisTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OasisRoot()
+                    OasisRoot(initialDestination = shortcutDestination)
                 }
             }
         }
+    }
+
+    companion object {
+        const val SHORTCUT_DESTINATION_EXTRA = "shortcut_destination"
     }
 }

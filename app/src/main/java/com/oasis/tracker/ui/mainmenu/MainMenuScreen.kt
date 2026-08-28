@@ -1,5 +1,8 @@
 package com.oasis.tracker.ui.mainmenu
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -58,6 +61,7 @@ import coil.compose.AsyncImage
 import com.oasis.tracker.data.FavoritesStore
 import com.oasis.tracker.data.GameEntity
 import com.oasis.tracker.data.Platforms
+import com.oasis.tracker.ui.components.ConfirmDialog
 import com.oasis.tracker.ui.components.MilestoneBanner
 import com.oasis.tracker.ui.components.NeonPanel
 import com.oasis.tracker.ui.diagnostics.CrashReportDialog
@@ -70,6 +74,7 @@ import com.oasis.tracker.ui.theme.TextSecondary
 import com.oasis.tracker.ui.update.UpdateBanner
 import com.oasis.tracker.update.UpdateState
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @Composable
 fun MainMenuScreen(
@@ -135,6 +140,25 @@ fun MainMenuScreen(
         favoriteIds.mapNotNull { byId[it] }
     }
 
+    // Everything lives only in this install's local database and prefs —
+    // uninstalling or clearing app data loses it all with no way back. Export
+    // writes a full snapshot to a file the user picks (Downloads, Drive, etc.)
+    // via the system document picker; Import reads one back in. Both use the
+    // Storage Access Framework rather than app-managed storage, so neither
+    // needs any extra runtime permission.
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching { app.backupManager.exportTo(uri) }
+                .onSuccess { milestone = "Backup saved." }
+                .onFailure { milestone = "Export failed: ${it.message}" }
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) pendingImportUri = uri
+    }
+
     // Tapping any main-menu tile bleeds its glow from blue to purple before
     // the actual navigation happens, rather than cutting away instantly.
     val tileGlowFraction = remember { Animatable(0f) }
@@ -192,6 +216,20 @@ fun MainMenuScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+        }
+
+        // A brand-new install otherwise just shows an empty Top 5 row and a
+        // grid of platform tiles with no hint of what to do first.
+        if (allGames?.isEmpty() == true) {
+            item(span = { GridItemSpan(2) }) {
+                NeonPanel(modifier = Modifier.fillMaxWidth(), borderColor = NeonPurple) {
+                    Text(
+                        "Welcome! Tap a platform below to add your first game, or search Wikipedia/archive.org for something you've already played.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    )
+                }
             }
         }
 
@@ -339,6 +377,30 @@ fun MainMenuScreen(
             )
         }
 
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "BACKUP",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(1) }) {
+            // Plain onClick rather than handleTileClick: there's no screen
+            // transition to glow-bleed toward, just a system file-picker overlay.
+            MenuTile(
+                label = "EXPORT",
+                sublabel = "Save a backup file",
+                onClick = { exportLauncher.launch("oasis-backup-${LocalDate.now()}.json") }
+            )
+        }
+        item(span = { GridItemSpan(1) }) {
+            MenuTile(
+                label = "IMPORT",
+                sublabel = "Restore from a file",
+                onClick = { importLauncher.launch(arrayOf("application/json")) }
+            )
+        }
+
         if (updateState != UpdateState.Idle && updateState != UpdateState.Checking) {
             item(span = { GridItemSpan(2) }) {
                 UpdateBanner(
@@ -365,6 +427,23 @@ fun MainMenuScreen(
                 app.crashLogStore.clear()
                 crashReport = null
             }
+        )
+    }
+
+    pendingImportUri?.let { uri ->
+        ConfirmDialog(
+            title = "Restore from backup?",
+            message = "This replaces everything currently in your library, diary, backlog, favorites, and Top 250 with the contents of the selected file. This can't be undone.",
+            confirmLabel = "RESTORE",
+            onConfirm = {
+                pendingImportUri = null
+                scope.launch {
+                    runCatching { app.backupManager.importFrom(uri) }
+                        .onSuccess { milestone = "Backup restored." }
+                        .onFailure { milestone = "Restore failed: ${it.message}" }
+                }
+            },
+            onDismiss = { pendingImportUri = null }
         )
     }
 }

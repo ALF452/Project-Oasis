@@ -11,8 +11,16 @@ interface GameDao {
     @Insert
     suspend fun insert(game: GameEntity): Long
 
+    /** Preserves each game's original id — used to restore a backup, where log
+     *  entries and the favorites/ranking lists already reference those ids. */
+    @Insert
+    suspend fun insertAll(games: List<GameEntity>)
+
     @Delete
     suspend fun delete(game: GameEntity)
+
+    @Query("DELETE FROM games")
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM games WHERE platformId = :platformId ORDER BY title ASC")
     fun observeGamesForPlatform(platformId: String): Flow<List<GameEntity>>

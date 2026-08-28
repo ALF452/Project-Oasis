@@ -1,5 +1,6 @@
 package com.oasis.tracker.data
 
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.YearMonth
@@ -78,6 +79,26 @@ class GameRepository(private val db: OasisDatabase) {
 
     /** Average rating per game, for games with at least one rated session. */
     fun averageRatings(): Flow<List<GameAverageRating>> = db.logEntryDao().observeAverageRatings()
+
+    /** Total logged hours per game, across all time — used to sort a platform's library by playtime. */
+    fun totalHoursByGame(): Flow<List<GameTotalHours>> = db.logEntryDao().observeTotalHoursByGame()
+
+    /**
+     * Wipes and replaces every game, session, and backlog entry in one atomic
+     * transaction — used to restore a backup. Runs as a single transaction so a
+     * failure partway through (a malformed row, running out of disk) rolls back
+     * to the pre-restore state instead of leaving the library half-erased.
+     */
+    suspend fun restoreFromBackup(games: List<GameEntity>, logEntries: List<LogEntryEntity>, backlog: List<BacklogEntity>) {
+        db.withTransaction {
+            db.logEntryDao().deleteAll()
+            db.backlogDao().deleteAll()
+            db.gameDao().deleteAll()
+            db.gameDao().insertAll(games)
+            db.logEntryDao().insertAll(logEntries)
+            db.backlogDao().insertAll(backlog)
+        }
+    }
 
     fun backlog(): Flow<List<BacklogEntity>> = db.backlogDao().observeAll()
 

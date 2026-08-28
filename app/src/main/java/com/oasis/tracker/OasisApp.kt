@@ -3,9 +3,12 @@ package com.oasis.tracker
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.oasis.tracker.data.BackupManager
+import com.oasis.tracker.data.FavoritesStore
 import com.oasis.tracker.data.GameRepository
 import com.oasis.tracker.data.OasisDatabase
 import com.oasis.tracker.data.SteamAuthStore
+import com.oasis.tracker.data.TopRankingStore
 import com.oasis.tracker.diagnostics.CrashHandler
 import com.oasis.tracker.diagnostics.CrashLogStore
 import com.oasis.tracker.network.GameSearchRepository
@@ -26,6 +29,8 @@ class OasisApp : Application(), ImageLoaderFactory {
         private set
     lateinit var crashLogStore: CrashLogStore
         private set
+    lateinit var backupManager: BackupManager
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -35,6 +40,7 @@ class OasisApp : Application(), ImageLoaderFactory {
         searchRepository = GameSearchRepository()
         updateManager = ApkUpdateManager(this)
         steamRepository = SteamRepository(SteamAuthStore(this))
+        backupManager = BackupManager(this, gameRepository, FavoritesStore(this), TopRankingStore(this))
     }
 
     /**

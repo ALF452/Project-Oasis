@@ -12,11 +12,18 @@ interface LogEntryDao {
     @Insert
     suspend fun insert(entry: LogEntryEntity): Long
 
+    /** Preserves each entry's original id and gameId — used to restore a backup. */
+    @Insert
+    suspend fun insertAll(entries: List<LogEntryEntity>)
+
     @Update
     suspend fun update(entry: LogEntryEntity)
 
     @Delete
     suspend fun delete(entry: LogEntryEntity)
+
+    @Query("DELETE FROM log_entries")
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM log_entries WHERE gameId = :gameId ORDER BY epochDay DESC")
     fun observeEntriesForGame(gameId: Long): Flow<List<LogEntryEntity>>
@@ -63,6 +70,11 @@ interface LogEntryDao {
     /** One row per game that has at least one rated session — used to show a rating badge on Top 250. */
     @Query("SELECT gameId, AVG(rating) AS avgRating FROM log_entries WHERE rating IS NOT NULL GROUP BY gameId")
     fun observeAverageRatings(): Flow<List<GameAverageRating>>
+
+    /** One row per game with any logged time — used to sort a platform's library by playtime. */
+    @Query("SELECT gameId, SUM(hours) AS totalHours FROM log_entries GROUP BY gameId")
+    fun observeTotalHoursByGame(): Flow<List<GameTotalHours>>
 }
 
 data class GameAverageRating(val gameId: Long, val avgRating: Float)
+data class GameTotalHours(val gameId: Long, val totalHours: Float)
