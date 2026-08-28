@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.* // weight() as a single named import collides with an internal same-named property in this Compose version
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -237,8 +239,17 @@ private fun PlatformPickerDialog(onSelect: (String) -> Unit, onDismiss: () -> Un
         onDismissRequest = onDismiss,
         title = { Text("Which platform?", color = NeonBlue) },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
-                items(Platforms.ALL) { platform ->
+            // A plain scrollable Column, not LazyColumn: AlertDialog's own content area
+            // can itself be scrollable when it overflows, and a lazy list nested inside
+            // another scrollable in the same orientation is a known Compose crash
+            // ("measured with an infinite height"). 28 platforms is small enough that
+            // there's no real virtualization benefit to a LazyColumn here anyway.
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Platforms.ALL.forEach { platform ->
                     Text(
                         platform.displayName,
                         style = MaterialTheme.typography.bodyLarge,
@@ -250,8 +261,7 @@ private fun PlatformPickerDialog(onSelect: (String) -> Unit, onDismiss: () -> Un
                 }
             }
         },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
     )
 }
 
